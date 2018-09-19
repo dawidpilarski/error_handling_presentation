@@ -3,7 +3,10 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{multirow}
 \usepackage{graphicx}
+\usepackage{colortbl}
+\usepackage{pifont}
 \usepackage[cache=false]{minted}
 
 \setminted{fontsize=\footnotesize}
@@ -102,6 +105,207 @@ if(open_status == SQLITE_OK){
 	\end{itemize}
 	
 \end{frame}
+
+\subsection{Exceptions}
+\begin{frame}[fragile]{But don't forget about exceptions}
+	And so there are also exceptions.
 	
+	\vskip 1em
+	How could things look like with exceptions:
+	\vskip 1em
+	
+	\begin{minted}{c++}
+#include <stdio.h>
+int main ()
+{
+  try {
+    FILE* pFile = fopen ("myfile.txt","w");
+    //stuff here
+  }
+  catch(std::exception& e){
+    //handle error
+  }
+  //so stuff
+  return 0;
+}
+	\end{minted}
+	
+\end{frame}
+
+\begin{frame}{"types" of exceptions}
+	We can divide implementation of exceptions into 2 types:
+	\begin{itemize}
+		\item table-based implementation
+		\item frame based implementation
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{"You don't pay for what you don't use"}
+	\begin{block}{table based exceptions}
+		optimized for scenarios when usually exceptions are not throwed
+	\end{block}
+
+	\begin{block}{frame based exception}
+		optimized for scenarios when exceptions are thrown often
+	\end{block}
+
+	\begin{block}{binary size}
+		no matter which implementation is chosen the binary size grows
+		significantly even when exceptions are not used.
+	\end{block}
+
+\end{frame}
+
+\begin{frame}[fragile]{Let's stick to error codes or provide dual API}
+	People from standardization commitee tried to do that and failed :)
+	
+	\vskip 2em
+	
+	Example of such failure can be functions from filesystem library
+	
+	\vskip 2em
+	
+	\begin{minted}{c++}
+directory_iterator& operator++();
+directory_iterator& increment( std::error_code& ec );
+	\end{minted}
+	
+	\vskip 2em 
+	
+	The increment function even though is meant to return errors through
+	\texttt{std::error\_code} can return some of the errors through exceptions.
+	
+\end{frame}
+
+\begin{frame}[fragile]{Error codes continued}
+	\begin{minted}{c++}
+A::A(){ 	// a constructor here
+  /* some initialization happening */
+  /* but whoops an error occurs, what now?*/
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Error codes continued}
+
+	\begin{columns}
+		\begin{column}{0.48\linewidth}
+			\begin{minted}{c++}
+A::A(){  //a constructor here
+  /* some initialization*/
+  /* but whoops an error occurs */
+
+  throw error; 
+}
+			\end{minted}
+		\end{column}
+	\pause
+		\begin{column}{0.48\linewidth}
+			\begin{minted}{c++}
+A::A(){  //a constructor here
+  /* some initialization */
+  /* but whoops an error occurs */
+}	
+
+bool A::IsValid(){ 
+  // was init successful?
+} 
+	
+			\end{minted}
+		\end{column}
+	\end{columns}
+\end{frame}
+	
+\begin{frame}{Current exception handling summary}
+	\centering
+
+	\begin{figure}
+	
+		\resizebox{0.9\linewidth}{!}{%
+			\begin{tabular}{c||c|c}
+				feature & exceptions & error codes \\ \hline \hline
+				constructors usability & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
+				concise code & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
+				performance & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
+				binary size & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
+				safety & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
+			\end{tabular}
+		}
+		\caption{comparison of error handling mechanisms' capabilities}	
+	\end{figure}
+	
+
+\end{frame}
+	
+\section{Introducing \texttt{std::expected}}
+\begin{frame}{Introducing expected}
+	
+\end{frame}
+
+\section{New exception model}
+\begin{frame}{New exception model - idea}
+	\begin{center}
+		Let's recall the comparison of exceptions and error codes:
+	\end{center}
+	
+	\begin{figure}
+		\resizebox{0.9\linewidth}{!}{%
+			\begin{tabular}{c||c|c}
+				feature & exceptions & error codes \\ \hline \hline
+				constructors usability & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
+				concise code & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
+				performance & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
+				binary size & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
+				safety & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
+			\end{tabular}
+		}
+	\end{figure}
+	
+\end{frame}
+
+\begin{frame}{Learning from mistakes}
+	\centering
+	Conclusion:
+	
+	\begin{itemize}
+		\item exceptions gives nice code
+		\item error codes provides performance and reliability
+	\end{itemize}
+
+	\begin{alertblock}{Next step:}
+	Let's use exception syntax for error codes-like handling.
+	\end{alertblock}
+	
+\end{frame}
+	
+\begin{frame}{\texttt{std::error}}
+	features of \texttt{std::error} includes:
+	\begin{itemize}
+		\item trivially-relocatable semantics
+		\item size of max 2 pointers
+		\begin{itemize}
+			\item 
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+	
+	
+\subsection{How can new exception handling look like}
+\begin{frame}[fragile]{Syntax for new exceptions}
+	\begin{itemize}
+		\item Let's take legacy exception specifications (\texttt{throws(typeid ...)})
+		\item Let's declare a function, that throws exceptions:
+		\begin{minted}{c++}
+void foo() throws(std::bad_alloc);
+		\end{minted}
+		\item Let \texttt{throws()} modify the return channel of a function
+		\item now compiler knows, what kind of exceptions can be thrown.
+		\item exceptions now are {\color{red}copied} to the callee.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{static exceptions specification}
+	
+\end{frame}
 	
 \end{document}
