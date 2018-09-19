@@ -1,0 +1,107 @@
+\documentclass[10pt,a4paper]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[cache=false]{minted}
+
+\setminted{fontsize=\footnotesize}
+
+\date{}
+\author{Dawid Pilarski}
+
+\title{Error handling in C++}
+
+
+\begin{document}
+
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\begin{frame}
+	\tableofcontents
+\end{frame}
+
+\section{Current state of error handling}
+\begin{frame}{Error handling and performance}
+	
+	There exist two common strategies for error handling:
+	\begin{itemize}
+		\item error codes
+		\item exceptions
+	\end{itemize}
+
+\end{frame}
+
+\subsection{Error codes description}
+\begin{frame}[fragile]{Error codes - example fopen}
+	\begin{minted}{c++}
+/* fopen example */
+#include <stdio.h>
+int main ()
+{
+  FILE * pFile;
+  pFile = fopen ("myfile.txt","w");
+  if (pFile!=NULL)
+  {
+    //do stuff
+  } else {
+    //how do I know if everything is fine?
+    
+    switch(errno){
+    // 
+    }
+  }
+  return 0;
+}
+	\end{minted}
+\end{frame}
+
+
+\begin{frame}[fragile]{Error code - better approach}
+	\begin{minted}{c++}
+// declaration
+int sqlite3_open( const char *filename,
+                  sqlite3 **ppDb /* OUT: SQLite db handle */);
+	
+//usage
+int open_status = sqlite3_open(/* ... */);
+if(open_status == SQLITE_OK){
+  // make use of opened database
+} else if( open_status == SQLITE_CANTOPEN_ISDIR ) {
+  // handle the error
+}
+	\end{minted}
+
+\vskip 1em
+		
+	What else can be done to improve the code:
+	
+\vskip 1em
+	
+	\begin{itemize}
+		\item enums
+		\item error should be an input output argument (passed by reference)
+			to force user handle it
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{C++11: yet another approach to the error codes }
+	There are 3 types, that C++ 11 added to support \texttt{std::error\_code}
+	
+	\vskip 1em
+	
+	\begin{itemize}
+		\item \href{https://en.cppreference.com/w/cpp/error/error_code}{\color{blue}\texttt{std::error\_code}}
+		\item \href{https://en.cppreference.com/w/cpp/error/error_condition
+			}{\color{blue}\texttt{std::error\_condition}}
+		\item \href{https://en.cppreference.com/w/cpp/error/error_category}{\color{blue}\texttt{std::error\_category}}
+	\end{itemize}
+	
+\end{frame}
+	
+	
+\end{document}
