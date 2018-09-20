@@ -1,4 +1,5 @@
 \documentclass[10pt,a4paper]{beamer}
+\usetheme{Copenhagen}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -16,6 +17,13 @@
 
 \title{Error handling in C++}
 
+\AtBeginSection[]
+{
+	\begin{frame}<beamer>
+	\frametitle{Plan}
+	\tableofcontents[currentsection]
+\end{frame}
+}
 
 \begin{document}
 
@@ -39,7 +47,7 @@
 
 \end{frame}
 
-\subsection{Error codes description}
+\subsection{Error codes}
 \begin{frame}[fragile]{Error codes - example fopen}
 	\begin{minted}{c++}
 /* fopen example */
@@ -79,21 +87,17 @@ if(open_status == SQLITE_OK){
 }
 	\end{minted}
 
-\vskip 1em
-		
-	What else can be done to improve the code:
-	
-\vskip 1em
-	
-	\begin{itemize}
-		\item enums
-		\item error should be an input output argument (passed by reference)
-			to force user handle it
-	\end{itemize}
+
+	\begin{block}{further improvements:}
+		\begin{itemize}
+			\item enums
+			\item error code taken as reference
+		\end{itemize}	
+	\end{block}
 \end{frame}
 
-\begin{frame}[fragile]{C++11: yet another approach to the error codes }
-	There are 3 types, that C++ 11 added to support \texttt{std::error\_code}
+\begin{frame}[fragile]{C++ 11 approach to the error codes }
+	There are 3 types, that C++ 11 added to support error codes.
 	
 	\vskip 1em
 	
@@ -103,6 +107,11 @@ if(open_status == SQLITE_OK){
 			}{\color{blue}\texttt{std::error\_condition}}
 		\item \href{https://en.cppreference.com/w/cpp/error/error_category}{\color{blue}\texttt{std::error\_category}}
 	\end{itemize}
+	
+\end{frame}
+
+\section{\texttt{std::expected}}
+\begin{frame}{Going further}
 	
 \end{frame}
 
@@ -172,6 +181,8 @@ directory_iterator& increment( std::error_code& ec );
 	
 	\vskip 2em 
 	
+	\pause
+	
 	The increment function even though is meant to return errors through
 	\texttt{std::error\_code} can return some of the errors through exceptions.
 	
@@ -236,11 +247,6 @@ bool A::IsValid(){
 	
 
 \end{frame}
-	
-\section{Introducing \texttt{std::expected}}
-\begin{frame}{Introducing expected}
-	
-\end{frame}
 
 \section{New exception model}
 \begin{frame}{New exception model - idea}
@@ -277,34 +283,104 @@ bool A::IsValid(){
 	\end{alertblock}
 	
 \end{frame}
+
+\begin{frame}{Idea}
+
+	\begin{alertblock}{using return channel}
+		Let's make throwing exceptions happen using return channels from functions
+	\end{alertblock}
+\end{frame}
+
+\begin{frame}{using return channel}
+	How to achieve that:
+	\begin{itemize}
+		\item Function needs to return some kind of a \texttt{std::variant<T, E>}
+		\item The \texttt{sizeof(E)} in above needs to be known upfront
+		\item Each exception must have same interface
+		\item Compiler must know how to \texttt{move} the object
+	\end{itemize}
+	
+	Other things to consider:
+	\begin{itemize}
+		\item co-existence with dynamic exceptions
+	\end{itemize}
+\end{frame}
 	
 \begin{frame}{\texttt{std::error}}
 	features of \texttt{std::error} includes:
 	\begin{itemize}
 		\item trivially-relocatable semantics
-		\item size of max 2 pointers
+		\item the \texttt{error\_category} is able to represent:
 		\begin{itemize}
-			\item 
+			\item C++ standard library exceptions
+			\item POSIX system codes
+			\item Windows' \texttt{NSTATUS}
+			\item and other common error domains
 		\end{itemize}
 	\end{itemize}
+
+	\vfill
+
+	\texttt{std::error} type can be treated as a next-gen \texttt{std::error\_code} type.
 \end{frame}
 	
 	
 \subsection{How can new exception handling look like}
-\begin{frame}[fragile]{Syntax for new exceptions}
-	\begin{itemize}
-		\item Let's take legacy exception specifications (\texttt{throws(typeid ...)})
-		\item Let's declare a function, that throws exceptions:
-		\begin{minted}{c++}
-void foo() throws(std::bad_alloc);
-		\end{minted}
-		\item Let \texttt{throws()} modify the return channel of a function
-		\item now compiler knows, what kind of exceptions can be thrown.
-		\item exceptions now are {\color{red}copied} to the callee.
-	\end{itemize}
+
+	
+\begin{frame}[fragile]{The forgotten \texttt{throws}}
+	
+	Since we no longer need to know the type of the exception,
+	we can notify about function throwing the static exception with \texttt{throws}
+	static exception specifier
+	
+	\begin{minted}{c++}
+void foo() throws {
+  throw arithmetic_error::something;
+}
+	\end{minted}
+	
 \end{frame}
 
-\begin{frame}{static exceptions specification}
+\begin{frame}[fragile]{more examples}
+
+	\begin{minted}{c++}
+string foo() throws {
+  //dynamic exception will be translated to static one
+  throw std::runtime_error; 
+}
+	\end{minted}
+	
+	\hfill
+	
+	\begin{minted}{c++}
+try {
+  auto result = g();
+  cout << "success, result is: " << result;
+}
+catch(error err) { // catch by value is fine
+  cout << "failed, error is: " << err.error();
+}
+	\end{minted}
+	
+	
+\end{frame}
+
+\begin{frame}[fragile]{more examples}
+	\begin{minted}{c++}
+int caller2(int i, int j) {
+  try {
+    return safe_divide(i, j);
+  } catch(error e) {
+    if (e == arithmetic_errc::divide_by_zero)
+      return 0;
+    if (e == arithmetic_errc::not_integer_division)
+      return i / j; // ignore
+    if (e == arithmetic_errc::integer_divide_overflows)
+      return INT_MIN;
+  }
+}
+	\end{minted}
 	
 \end{frame}
 	
