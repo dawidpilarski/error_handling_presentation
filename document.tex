@@ -110,11 +110,6 @@ if(open_status == SQLITE_OK){
 	
 \end{frame}
 
-\section{\texttt{std::expected}}
-\begin{frame}{Going further}
-	
-\end{frame}
-
 \subsection{Exceptions}
 \begin{frame}[fragile]{But don't forget about exceptions}
 	And so there are also exceptions.
@@ -134,7 +129,6 @@ int main ()
   catch(std::exception& e){
     //handle error
   }
-  //so stuff
   return 0;
 }
 	\end{minted}
@@ -246,6 +240,51 @@ bool A::IsValid(){
 	\end{figure}
 	
 
+\end{frame}
+
+\section{\texttt{std::expected}}
+\begin{frame}[fragile]{further with error codes}
+\begin{block}{Idea}
+	Let's embed the return error code with expected type
+\end{block}
+
+\vfill
+
+\begin{minted}{c++}
+template <typename T, typename E>
+class expected;
+\end{minted}
+\end{frame}
+
+
+
+\begin{frame}[fragile]{Usage example}
+
+\begin{columns}
+\begin{column}{0.48\linewidth}
+	\begin{minted}{c++}
+enum class arithmetic_errc {
+  divide_by_zero,
+  not_integer_division,      
+  integer_divide_overflows
+};
+	\end{minted}
+\end{column}
+\pause
+\begin{column}{0.48\linewidth}
+	\begin{minted}{c++}
+using errc = arithmetic_errc;
+expected<double, errc>
+safe_divide(double i, double j){
+  if(j==0){ 
+    return 
+    unexpected(errc::divide_by_zero);
+  } else 
+    return i/j;
+}
+	\end{minted}
+\end{column}
+\end{columns}
 \end{frame}
 
 \section{New exception model}
@@ -382,6 +421,13 @@ int caller2(int i, int j) {
 }
 	\end{minted}
 	
+\end{frame}
+
+
+
+\begin{frame}{The END}
+\centering
+	Thanks for attention!
 \end{frame}
 	
 \end{document}
