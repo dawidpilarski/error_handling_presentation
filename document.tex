@@ -29,7 +29,7 @@
 \end{frame}
 
 \section{Current state of error handling}
-\begin{frame}{Error handling and performance}
+\begin{frame}{Built-in error handling mechanisms}
 	
 	There exist two common strategies for error handling:
 	\begin{itemize}
@@ -78,18 +78,6 @@ if(open_status == SQLITE_OK){
   // handle the error
 }
 	\end{minted}
-
-\vskip 1em
-		
-	What else can be done to improve the code:
-	
-\vskip 1em
-	
-	\begin{itemize}
-		\item enums
-		\item error should be an input output argument (passed by reference)
-			to force user handle it
-	\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{C++11: yet another approach to the error codes }
@@ -106,8 +94,21 @@ if(open_status == SQLITE_OK){
 	
 \end{frame}
 
+\begin{frame}{\texttt{std::error\_code}}
+\end{frame}
+
+\begin{frame}{\texttt{std::error\_condition}}
+	
+\end{frame}
+
+\begin{frame}{\texttt{std::error\_category}}
+\end{frame}
+
+\begin{frame}{\texttt{std::error\_code in action}}
+\end{frame}
+
 \subsection{Exceptions}
-\begin{frame}[fragile]{But don't forget about exceptions}
+\begin{frame}[fragile]{Exceptions}
 	And so there are also exceptions.
 	
 	\vskip 1em
@@ -119,7 +120,7 @@ if(open_status == SQLITE_OK){
 int main ()
 {
   try {
-    FILE* pFile = fopen ("myfile.txt","w");
+    FILE pFile = fopen ("myfile.txt","w");
     //stuff here
   }
   catch(std::exception& e){
@@ -132,7 +133,7 @@ int main ()
 	
 \end{frame}
 
-\begin{frame}{"types" of exceptions}
+\begin{frame}{exceptions implementation}
 	We can divide implementation of exceptions into 2 types:
 	\begin{itemize}
 		\item table-based implementation
@@ -140,20 +141,15 @@ int main ()
 	\end{itemize}
 \end{frame}
 
+\begin{frame}{table based exceptions}
+	
+\end{frame}
+
+\begin{frame}{frame based exceptions}
+	
+\end{frame}
+
 \begin{frame}{"You don't pay for what you don't use"}
-	\begin{block}{table based exceptions}
-		optimized for scenarios when usually exceptions are not throwed
-	\end{block}
-
-	\begin{block}{frame based exception}
-		optimized for scenarios when exceptions are thrown often
-	\end{block}
-
-	\begin{block}{binary size}
-		no matter which implementation is chosen the binary size grows
-		significantly even when exceptions are not used.
-	\end{block}
-
 \end{frame}
 
 \begin{frame}[fragile]{Let's stick to error codes or provide dual API}
