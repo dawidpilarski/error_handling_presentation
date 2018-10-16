@@ -1,6 +1,8 @@
 \documentclass[10pt]{beamer}
 
 \usetheme[progressbar=frametitle]{metropolis}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
 
 \usepackage{booktabs}
 \usepackage[scale=2]{ccicons}
@@ -14,7 +16,7 @@
 
 \title{Futuristic Error Handling}
 \subtitle{Error handling in C++ today and tomorrow}
-\logo{test}
+\logo{\includegraphics[width=0.05\linewidth]{logo.png}}
 % \date{\today}
 \date{}
 \author{Dawid Pilarski}
@@ -89,32 +91,80 @@ if(open_status == SQLITE_OK){
 	
 \end{frame}
 
+\section{Error codes - propagation}
 
+\begin{frame}[fragile]{propagation}
+	\begin{minted}{c++}
+void foo_bar(int& errc /*...*/){
+  errc = foo();
+  // ...
+  errc = bar();		
+  // ...
+}
+	\end{minted}
+\end{frame}
 
-\section{Titleformats}
+\begin{frame}[fragile]{error translation}
+	\begin{minted}{c++}
+void foo_bar(foo_bar_errc errc&){
+  foo_errc ferrc = foo();
+  errc = translate_foo(ferrc);
+  // ...
+  bar_errc berrc = bar();
+  errc = translate_foo(berrc);
+}
+	\end{minted}
+\end{frame}
 
-\begin{frame}{Metropolis titleformats}
+\begin{frame}{C-style error codes summary}
+	So we can see {\color{red}serious disadvantages} (except for {\color{blue}obvious advantages}):
+	
+	\begin{itemize}[<+- | alert@+>]
+		\item success path same as error path
+		\item boiler plate code
+		\item cluttering code with translations
+	\end{itemize}
+\end{frame}
+
+\section{Error codes - modern approach}
+\begin{frame}{standard library support - what do we need?}
+	\begin{itemize}
+		\item A way to define new error codes
+		\item A way to distinguish domain of the error codes
+		\item And to fix as many C-style issues as possible
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Standard library support - what we get?}
+	three types:
+	\begin{itemize}
+		\item \texttt{std::error\_code}
+		\item \texttt{std::error\_category}
+		\item \texttt{std::error\_condition}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{std::error\_code in action}
+	\begin{minted}{c++}
+std::error_code errc;
+
+is_regular_file("non_existent_directory", errc);
+
+std::cout << errc << std::endl;
+std::cout << errc.value() << std::endl;
+std::cout << errc.message() << std::endl;
+std::cout << errc.category().name() << std::endl;
+	\end{minted}
+	
+	\hrulefill
+	
+	\texttt{\\
+		\$ system:2 \\
+		\$ 2 \\
+		\$ Nie można odnalexć określonego pliku. \\
+		\$ system}
 \end{frame}
 
 
-\appendix
-
-\begin{frame}[fragile]{Backup slides}
-  Sometimes, it is useful to add slides at the end of your presentation to
-  refer to during audience questions.
-
-  The best way to do this is to include the \verb|appendixnumberbeamer|
-  package in your preamble and call \verb|\appendix| before your backup slides.
-
-  \themename will automatically turn off slide numbering and progress bars for
-  slides in the appendix.
-\end{frame}
-
-\begin{frame}[allowframebreaks]{References}
-
-  \bibliography{demo}
-  \bibliographystyle{abbrv}
-
-\end{frame}
 
 \end{document}
