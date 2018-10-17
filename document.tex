@@ -1,14 +1,28 @@
 \documentclass[10pt]{beamer}
 
 \usetheme[progressbar=frametitle, block=fill]{metropolis}
-
-\definecolor{amethyst}{rgb}{0.8, 0.6, 1.0}
-\definecolor{amethystdark}{rgb}{0.2, 0.1, 0.4}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{pgfpages}
+\setbeamertemplate{note page}{\insertnote}
+%\setbeameroption{show notes on second screen=left}
+\setbeameroption{hide notes}
+\definecolor{amethyst}{rgb}{0.5, 0.4, 1.0}
+\definecolor{amethystgrey}{rgb}{0.85, 0.85, 1.0}
+\definecolor{amethystdark}{rgb}{0.4, 0.3, 0.9}
+\definecolor{orangedark}{rgb}{0.0, 0.9, 0}
+%\definecolor{titlebg}{HTML}{4e8074}
+%\definecolor{titlebg}{HTML}{3e7985}
+\definecolor{titlebg}{HTML}{fbf8ff}
+\definecolor{font}{HTML}{23373b}
 
 %\setbeamercolor{title}{fg=amethyst, bg=amethyst}
-\setbeamercolor{frametitle}{bg=amethystdark}
-%\setbeamercolor{structure}{fg=amethyst}
-%\setbeamercolor{progress bar}{ ... }
+\setbeamercolor{frametitle}{fg= font, bg=titlebg}
+%\setbeamercolor{section title}{black}
+%\setbeamercolor{structure}{fg=amethyst, bg=amethyst}
+\setbeamercolor{progress bar}{ fg = amethyst, bg= amethystgrey }
+%\setbeamercolor{itemize item}{fg=amethyst,bg=white}
+\setbeamercolor{alerted text}{fg=amethystdark}
 %\setbeamercolor{title separator}{ ... }
 %\setbeamercolor{progress bar in head/foot}{ ... }
 %\setbeamercolor{progress bar in section page}{ ... }
@@ -49,6 +63,7 @@
 \end{frame}
 
 \begin{frame}{Recommendable error handling mechanism}
+	\note{Q: ask which mechanism would be chosen}
 	Which error mechanism would you choose?
 	
 	There exist two common strategies for error handling:
@@ -210,37 +225,303 @@ if(errcode == errc::no_such_file_or_directory){
 
 \section{Error codes - \\ defining custom error codes}
 
-\begin{frame}{Step 1 - define custom enum with error codes}
+\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
+	\begin{minted}{c++}
+enum class map_access_error : int {
+  SUCCESS, // zero means success
+  MAP_NOT_INSTALLED,
+  LACK_OF_PERMISSION,
+  MAP_CORRUPTED,
+};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 2 - inform the world about new error code type}
+\begin{minted}{c++}
+namespace std{
+  template <> struct
+  is_error_code_enum<map_access_error> : std::true_type{};
+}
+\end{minted}
 	
 \end{frame}
 
-\begin{frame}{Step 2 - inform the world about new error code type}
-
+\begin{frame}[fragile]{Step 3 - custom error category}
+	
+	\begin{minted}{c++}
+struct map_access_domain : std::error_category {
+  const char *name() const noexcept override;		
+  std::string message(int errc) const override;
+};
+	\end{minted}
 \end{frame}
 
-\begin{frame}{Step 3 - custom error category}
-
+\begin{frame}[fragile]{Step 3 - custom error category}
+\begin{minted}{c++}
+const char* map_access_domain::name() const noexcept{
+  return "Map Access Error";
+}
+\end{minted}
 \end{frame}
 
-\begin{frame}{Step 4 - factory function}
+\begin{frame}[fragile]{Step 3 - custom error category}
+	\begin{minted}{c++}
+std::string map_access_domain::message(int errc) const{
+  switch (static_cast<map_access_error>(errc)){
+    case map_access_error::SUCCESS:
+      return "SUCCESS";
+    case map_access_error::MAP_NOT_INSTALLED:
+      return "MAP IS NOT INSTALLED ON THE DEVICE";
+    case map_access_error::LACK_OF_PERMISSION:
+      return "MISSING PERMISSIONS TO READ THE MAP";
+    case map_access_error::MAP_CORRUPTED:
+      return "MAP IS CORRUPTED. REINSTALLATION NEEDED";
+    default:
+      return "ERROR UNKNOWN";
+  }
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 4 - factory function}
+
+	\begin{minted}{c++}
+namespace std{
+  template <typename ErrorCode>
+  error_code(typename std::enable_if<
+                        is_error_code_enum<
+                          ErrorCode>
+                        ::value, ErrorCode>
+                      ::type errcode) noexcept 
+             : error_code(make_error_code(errcode))
+  {}
+}
+	\end{minted}
 	
 \end{frame}
 
-\begin{frame}{Step 5 - custom error condition}
-	
+\begin{frame}[fragile]{Step 4 - factory function}
+	\begin{minted}{c++}
+std::error_code make_error_code(map_access_error errc){
+  return {static_cast<int>(errc), map_access_error_domain};
+}
+	\end{minted}
 \end{frame}
 
-\begin{frame}{Step 6 - Enjoy}
-	
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+enum class calculate_route_error : int {
+  SUCCESS,
+  MAP_ERROR,
+  COULD_NOT_FIND_PATH,
+  WRONG_ARGUMENTS
+};
+	\end{minted}
 \end{frame}
 
-\begin{frame}{More complex example}
-	
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+
+namespace std{
+  template <> struct
+  is_error_condition_enum<calculate_route_error>
+                             : std::true_type{};
+}
+	\end{minted}
 \end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+struct calculate_route_error_domain : std::error_category{
+  const char *name() const noexcept override;
+  std::string message(int errc) const override;
+  bool equivalent(const std::error_code &errc, int condition) 
+                                      const noexcept override;
+};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+bool calculate_route_error_domain::equivalent(
+          const std::error_code &errc, int condition) 
+                                      const noexcept{
+                                      
+  switch (static_cast<calculate_route_error>(condition)){
+    case calculate_route_error::SUCCESS:
+      if(errc.value() == 0)
+        return true;
+    case calculate_route_error::MAP_ERROR:
+      if(errc.category().name() == map_access_domain().name())
+        return true;
+        
+    // other cases
+  }
+  return false;
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}{c++}
+
+std::error_code errcode;
+auto route = calculate_route({}, {}, {}, errcode);
+
+if(!errcode)
+  return route;
+
+std::cout << errcode.category().name() << " : " <<
+             errcode.message() << std::endl;
+
+if(errcode == calculate_route_error::MAP_ERROR)
+  reinstall_map();
+else if (errcode == calculate_route_error::COULD_NOT_FIND_PATH)
+  inform_user_no_path_found();
+else if (errcode == calculate_route_error::WRONG_ARGUMENTS)
+  std::terminate();
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}{c++}
+route calculate_route(point a, point b, route_options options,
+                      std::error_code& errc){
+  auto map_database = database(errc);
+  if (errc) return {};
+
+  auto a_handle = map_database.find(a, errc);
+  if(errc) return {};
+  auto b_handle = map_database.find(b, errc);
+  if(errc) return {};
+
+  route result_route = find_path(a_handle, b_handle,
+                                 options, errc);
+  if(errc) return {};
+
+  return result_route;
+}
+	\end{minted}
+\end{frame}
+
 	
 \section{Error codes - summary}
 
+\begin{frame}{error codes summary}
+	\begin{columns}
+		\begin{column}{0.48\linewidth}
+			Pros 
+			\vfill
+			\begin{itemize}
+				\item Performance
+				\begin{itemize}
+					\item speed
+					\item small (occupied memory)
+					\item speed predictability
+					\item memory occupation predictability
+					\item C compatibility
+				\end{itemize}
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\linewidth}
+			Cons
+			\vfill
+			\begin{itemize}
+				\item business logic cluttering
+				\item massive amount of boilerplate code
+				\item template magic in case of std::error\_code
+			\end{itemize}
+		\end{column}
+	\end{columns}
+\end{frame}
+
 
 \section{Exceptions to the rescue (?)}
+
+\begin{frame}[fragile]{Brief look at the example}
+	\begin{minted}{c++}
+try{
+  auto route = calculate_route(/*arguments*/);
+} catch(map_error& err){
+  // logic
+} catch(path_not_found& err){
+  // logic
+} /* catch(std::invalid_argument){
+
+} */
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Brief look at the example}
+	\begin{minted}{c++}
+route calculate_route(point a, point b,
+                      route_options options){
+                      
+  auto map_database = database();
+
+  auto a_handle = map_database.find(a, errc);
+  auto b_handle = map_database.find(b, errc);
+
+  route result_route = find_path(a_handle, b_handle, options);
+
+  return result_route;
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Defining custom exception}
+	\begin{minted}{c++}
+class map_error : public std::runtime_error{};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Dark side of the exceptions}
+	\begin{itemize}[<+- | alert@+>]
+		\item Still translation of exceptions is needed
+		\item For performance reasons 50\% of projects have disabled exceptions
+	\end{itemize}
+\end{frame}
+
+\section{C++ - zero overhead rule}
+
+\begin{frame}{What is zero overhead?}
+	\begin{itemize}[<+- | alert@+>]
+		\item language features {\color{amethyst}can} introduce overhead
+		\item "you don't pay for what you don't use"
+		\item if you use a feature it should be as afficient as handcoded version.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Exceptions not to the rescue}
+		\centering
+		\textcolor{red}{Exceptions break the zero overhead rule.}
+		
+		But why?
+\end{frame}
+
+\section{Exceptions - how do they work?}
+
+\begin{frame}{Approaches towards implementation}
+	Two major kinds of implementation:
+	\begin{itemize}[<+- | alert@+>]
+		\item additional data added to the frame stack
+		\item additional data added to someplace on the heap
+	\end{itemize}
+\end{frame}
+	
+\begin{frame}{implementations' consequences}
+	\centering
+	\begin{tabular}{p{3cm}|p{3cm}|p{3cm}}
+		\multirow{2}{*}{implementation}& \multicolumn{2}{c}{performance} \\
+		& without throwing & with throwing  \\ \hline \hline
+		frame-based  & overhead & fast \\ \hline
+		table-based & almost no overhead & slow \\ \hline
+	\end{tabular}
+\end{frame}
+
+\begin{frame}{C++ in Mars rover}
+	zawartość...
+\end{frame}
 	
 \end{document}
+
