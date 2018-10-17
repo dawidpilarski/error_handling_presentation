@@ -1,6 +1,18 @@
 \documentclass[10pt]{beamer}
 
-\usetheme[progressbar=frametitle]{metropolis}
+\usetheme[progressbar=frametitle, block=fill]{metropolis}
+
+\definecolor{amethyst}{rgb}{0.8, 0.6, 1.0}
+\definecolor{amethystdark}{rgb}{0.2, 0.1, 0.4}
+
+%\setbeamercolor{title}{fg=amethyst, bg=amethyst}
+\setbeamercolor{frametitle}{bg=amethystdark}
+%\setbeamercolor{structure}{fg=amethyst}
+%\setbeamercolor{progress bar}{ ... }
+%\setbeamercolor{title separator}{ ... }
+%\setbeamercolor{progress bar in head/foot}{ ... }
+%\setbeamercolor{progress bar in section page}{ ... }
+
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 
@@ -12,11 +24,10 @@
 \usepackage{pgfplots}
 
 \usepackage{xspace}
-\newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
 
 \title{Futuristic Error Handling}
 \subtitle{Error handling in C++ today and tomorrow}
-\logo{\includegraphics[width=0.05\linewidth]{logo.png}}
+%\logo{\includegraphics[width=0.05\linewidth]{logo.png}}
 % \date{\today}
 \date{}
 \author{Dawid Pilarski}
@@ -35,11 +46,7 @@
 
 \begin{frame}{Why am I here?}
 	Why should we bother with error handling?
-
-\begin{frame}
-	\tableofcontents
 \end{frame}
-
 
 \begin{frame}{Recommendable error handling mechanism}
 	Which error mechanism would you choose?
@@ -130,8 +137,6 @@ void foo_bar(foo_bar_errc errc&){
 	\end{itemize}
 \end{frame}
 	
-\begin{frame}{Current exception handling summary}
-	\centering
 
 \section{Error codes - modern approach}
 \begin{frame}{standard library support - what do we need?}
@@ -141,130 +146,101 @@ void foo_bar(foo_bar_errc errc&){
 		\item And to fix as many C-style issues as possible
 	\end{itemize}
 \end{frame}
-	
-\section{Perfect error handling}
 
-\begin{frame}{Standard library support - what we get?}
-	three types:
+\begin{frame}{standard library support - what we get?}
+	We get three new major types:
 	\begin{itemize}
-		\item \texttt{std::error\_code}
-		\item \texttt{std::error\_category}
-		\item \texttt{std::error\_condition}
+		\item std::error\_code
+		\item std::error\_category
+		\item std::error\_condition
 	\end{itemize}
 \end{frame}
+	
 
 \begin{frame}[fragile]{std::error\_code in action}
 	\begin{minted}{c++}
-std::error_code errc;
+std::error_code errcode;
+is_regular_file("non_existent_directory", errcode);
 
-is_regular_file("non_existent_directory", errc);
-
-std::cout << errc << std::endl;
-std::cout << errc.value() << std::endl;
-std::cout << errc.message() << std::endl;
-std::cout << errc.category().name() << std::endl;
+std::cout << errcode << std::endl;
+std::cout << errcode.value() << std::endl;
+std::cout << errcode.message() << std::endl;
+std::cout << errcode.category().name() << std::endl;
 	\end{minted}
 	
 	\hrulefill
 	
+	\begin{block}{output}
 	\texttt{\\
-		\$ system:2 \\
+		\$ generic:2 \\
 		\$ 2 \\
-		\$ Nie można odnalexć określonego pliku. \\
-		\$ system}
-\end{frame}
-	
-\section{Type system related error handling improvements}
-
-\subsection{std::expected}
-\begin{frame}{Introducing expected}
-\end{frame}
-
-\begin{frame}{Usage}
-\end{frame}
-
-\end{document}
-
-\begin{frame}{Runtime performance}
-\end{frame}
-
-\subsection{std::outcome}
-
-\begin{frame}{Introducing outcome}
-\end{frame}
-
-\begin{frame}{Implementation details}
-\end{frame}
-
-\begin{frame}{Runtime performance}
-\end{frame}
-
-
-
-\section{Embedding new error handling into the language}
-\begin{frame}{New exception model - idea}d
-	\begin{center}
-		Let's recall the comparison of exceptions and error codes:
-	\end{center}
-	
-	\begin{figure}
-		\resizebox{0.9\linewidth}{!}{%
-			\begin{tabular}{c||c|c}
-				feature & exceptions & error codes \\ \hline \hline
-				constructors usability & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
-				concise code & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
-				performance & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-				binary size & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-				safety & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-			\end{tabular}
-		}
-	\end{figure}
+		\$ No such file or directory \\
+		\$ generic}	
+	\end{block}
 	
 \end{frame}
 
-\begin{frame}{Learning from mistakes}
-	\centering
-	Conclusion:
-	
-	\begin{itemize}
-		\item exceptions gives nice code
-		\item error codes provides performance and reliability
-	\end{itemize}
-
-	\begin{alertblock}{Next step:}
-	Let's use exception syntax for error codes-like handling.
-	\end{alertblock}
-	
+\begin{frame}[fragile]{Acting upon error}
+	\begin{minted}{c++}
+std::error_code errcode;
+is_regular_file("non_existent_file", errcode);
+  
+if(errcode == errc::no_such_file_or_directory){
+  // creating a file
+}
+	\end{minted}
 \end{frame}
-	
-\begin{frame}{\texttt{std::error}}
-	features of \texttt{std::error} includes:
-	\begin{itemize}
-		\item trivially-relocatable semantics
-		\item size of max 2 pointers
+
+\begin{frame}{Let's define our own error code}
+	Steps to create own error code:
+	\begin{itemize}[<+- | alert@+>]
+		\item define custom enum with error codes
+		\item inform, that the enum is an error code
+		\item create custom error category (or use existing one)
+		\item create enum to error code factory function
+		\item (optional) define custom error condition
 		\begin{itemize}
-			\item 
+			\item define error condition enum
+			\item inform the world about new error condition enum
+			\item make conversion function from new error code to error condition
 		\end{itemize}
-	\end{itemize}
-\end{frame}
-	
-	
-\subsection{How can new exception handling look like}
-\begin{frame}[fragile]{Syntax for new exceptions}
-	\begin{itemize}
-		\item Let's take legacy exception specifications (\texttt{throws(typeid ...)})
-		\item Let's declare a function, that throws exceptions:
-		\begin{minted}{c++}
-void foo() throws(std::bad_alloc);
-		\end{minted}
-		\item Let \texttt{throws()} modify the return channel of a function
-		\item now compiler knows, what kind of exceptions can be thrown.
-		\item exceptions now are {\color{red}copied} to the callee.
+		\item enjoy!
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{static exceptions specification}
+\section{Error codes - \\ defining custom error codes}
+
+\begin{frame}{Step 1 - define custom enum with error codes}
 	
 \end{frame}
+
+\begin{frame}{Step 2 - inform the world about new error code type}
+
+\end{frame}
+
+\begin{frame}{Step 3 - custom error category}
+
+\end{frame}
+
+\begin{frame}{Step 4 - factory function}
+	
+\end{frame}
+
+\begin{frame}{Step 5 - custom error condition}
+	
+\end{frame}
+
+\begin{frame}{Step 6 - Enjoy}
+	
+\end{frame}
+
+\begin{frame}{More complex example}
+	
+\end{frame}
+	
+\section{Error codes - summary}
+
+
+\section{Exceptions to the rescue (?)}
 	
 \end{document}
