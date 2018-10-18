@@ -4,6 +4,9 @@
 \usepackage{xcolor}
 \usepackage{multirow}
 \usepackage{pgfpages}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
 \setbeamertemplate{note page}{\insertnote}
 %\setbeameroption{show notes on second screen=left}
 \setbeameroption{hide notes}
@@ -118,7 +121,7 @@ if(open_status == SQLITE_OK){
 
 \section{Error codes - propagation}
 
-\begin{frame}[fragile]{propagation}
+\begin{frame}[fragile]{Propagation}
 	\begin{minted}{c++}
 void foo_bar(int& errc /*...*/){
   errc = foo();
@@ -130,7 +133,7 @@ void foo_bar(int& errc /*...*/){
 	
 \end{frame}
 
-\begin{frame}[fragile]{error translation}
+\begin{frame}[fragile]{Error translation}
 	\begin{minted}{c++}
 void foo_bar(foo_bar_errc errc&){
   foo_errc ferrc = foo();
@@ -154,15 +157,14 @@ void foo_bar(foo_bar_errc errc&){
 	
 
 \section{Error codes - modern approach}
-\begin{frame}{standard library support - what do we need?}
+\begin{frame}{Standard library support - what do we need?}
 	\begin{itemize}
 		\item A way to define new error codes
 		\item A way to distinguish domain of the error codes
-		\item And to fix as many C-style issues as possible
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{standard library support - what we get?}
+\begin{frame}{Standard library support - what we get?}
 	We get three new major types:
 	\begin{itemize}
 		\item std::error\_code
@@ -213,7 +215,7 @@ if(errcode == errc::no_such_file_or_directory){
 		\item inform, that the enum is an error code
 		\item create custom error category (or use existing one)
 		\item create enum to error code factory function
-		\item (optional) define custom error condition
+		\item define custom error condition
 		\begin{itemize}
 			\item define error condition enum
 			\item inform the world about new error condition enum
@@ -407,8 +409,8 @@ route calculate_route(point a, point b, route_options options,
 	
 \section{Error codes - summary}
 
-\begin{frame}{error codes summary}
-	\begin{columns}
+\begin{frame}{Error codes summary}
+	\begin{columns}[T]
 		\begin{column}{0.48\linewidth}
 			Pros 
 			\vfill
@@ -459,8 +461,8 @@ route calculate_route(point a, point b,
                       
   auto map_database = database();
 
-  auto a_handle = map_database.find(a, errc);
-  auto b_handle = map_database.find(b, errc);
+  auto a_handle = map_database.find(a);
+  auto b_handle = map_database.find(b);
 
   route result_route = find_path(a_handle, b_handle, options);
 
@@ -509,7 +511,7 @@ class map_error : public std::runtime_error{};
 	\end{itemize}
 \end{frame}
 	
-\begin{frame}{implementations' consequences}
+\begin{frame}{Implementations' consequences}
 	\centering
 	\begin{tabular}{p{3cm}|p{3cm}|p{3cm}}
 		\multirow{2}{*}{implementation}& \multicolumn{2}{c}{performance} \\
@@ -519,9 +521,192 @@ class map_error : public std::runtime_error{};
 	\end{tabular}
 \end{frame}
 
-\begin{frame}{C++ in Mars rover}
-	zawartość...
+\begin{frame}{Exceptions summary}
+	\begin{columns}[T]
+		\begin{column}{0.48\linewidth}
+			Pros
+			\begin{itemize}
+				\item differentiated error and success paths
+				\item automagical error propagation
+				\item little/no boilerplate code
+			\end{itemize}
+		\end{column}
+	\begin{column}{0.48\linewidth}
+			Cons
+			\begin{itemize}
+				\item Performance
+				\begin{itemize}
+					\item slow
+					\item not deterministic speed
+					\item not deterministic storage occupation
+					\item not compatible with C
+					\item not usable in any safety standards (e.g. MISRA)
+				\end{itemize}
+			\end{itemize}
+	\end{column}
+	\end{columns}
+\end{frame}
+
+\section{Possible future of error handling.}
+
+\begin{frame}{Perfect error handling mechanism}
+	\centering
+	\begin{tabular}{|c|c|c|}
+		\hline
+		feature & exceptions & std::error\_code \\ \hline \hline
+		distinct error path & yes & no \\ \hline
+		distinct success path & yes & no \\ \hline \hline
+		unhandled error propagation & yes & no \\ \hline
+		unhandled error is visible & no & yes \\ \hline
+		uncluttered business logic & yes & no \\ \hline \hline
+		RTTI required & yes & no \\ \hline
+		deterministic space/time occupation & no & yes \\ \hline
+		time cost == return & no & yes \\ \hline \hline
+		C compatibility & no & no \\ \hline
+	\end{tabular}
+\end{frame}
+
+\begin{frame}{Key idea for improvement}
+	\begin{block}{Key ideas}
+		\begin{itemize}[<+- | alert@+>]
+			\item Let's use the return channel to return the std::error
+			\item Let the compiler generate boilerplate code for error propagation
+		\end{itemize}
+	\end{block}
+
+	Let's call those \emph{\color{amethyst}static exceptions}
+\end{frame}
+	
+\begin{frame}{What is std::error}
+	\begin{itemize}
+		\item size of error\_code is explicitly defined
+		\item has same properties as std::error\_code
+		\item implements trivially relocatable semantics
+	\end{itemize}
+\end{frame}
+	
+\begin{frame}[fragile]{How to use return channel for std::error}
+	\begin{columns}[T]
+		\begin{column}{0.48\linewidth}
+			We can do that manually using variant:
+			\begin{minted}{c++}
+using Result = 
+      variant<T, std::error>;			
+Result foo();
+			\end{minted}
+		\end{column}
+		\begin{column}{0.48\linewidth}
+			But this can be nicer with syntax sugar:
+			\begin{minted}{c++}
+T foo() throws;
+			\end{minted}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Static exceptions example}
+	
+	\begin{minted}{c++}
+string f() throws {
+  if (flip_a_coin()) throw arithmetic_error::something;
+  return "xyzzy"s + "plover"; 
+}
+
+string g() throws { return f() + "plugh"; } 
+
+int main() {
+  try {
+    auto result = g();
+    cout << "success, result is: " << result;
+  } catch(error err) {
+    cout << "failed, error is: " << err.error();
+  }
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{minted}{c++}
+int f1() throws;	
+int f2() throws;
+
+int main(){
+// return f1() + f2(); // error
+try return f1() + f2();// ok, covers both 
+return try f1()+ f2();
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}{Cool! But what about C compatibility}
+	It is possible, that C will be ABI compatible with static exceptions!
+	
+	This implies:
+	
+	\begin{itemize}
+		\item Exceptions could be thrown from C++, passed through C and catched again in C++
+		\item We could handle C++ exceptions in C
+		\item We could handle C exceptions in C++
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Short story about C language}
+	\begin{minted}{c++}
+_Either(int, std_error) somefunc(int a){
+  return a > 5 ? _Expected(a) : _Unexpected(a);
+}
+
+// ...
+
+_Either(int, std_error) ret = somefunc(a);
+if(ret)
+  printf("%d\n", ret.expected);
+else
+  printf("%f\n", ret.unexpected);
+	\end{minted}
+\end{frame}
+
+\begin{frame}{Static exceptions summary}
+\centering
+	\begin{tabular}{|c|c|}
+		\hline
+		feature & static exceptions \\ \hline \hline
+		distinct error path & yes \\ \hline
+		distinct success path & yes \\ \hline \hline
+		unhandled error propagation & yes \\ \hline
+		unhandled error is visible & yes \\ \hline
+		uncluttered business logic & yes \\ \hline \hline
+		RTTI required & no \\ \hline
+		deterministic space/time occupation & yes \\ \hline
+		time cost == return & yes \\ \hline \hline
+		C compatibility & maybe \\ \hline
+	\end{tabular}
+\end{frame}
+
+\begin{frame}{Possible issue}
+	We will end up having 3 ways to handle error codes:
+	\begin{itemize}
+		\item dynamic exceptions
+		\item static exceptions
+		\item old style error codes
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Bibliography}
+	This presentation wouldn't be possible without:
+	
+	\begin{itemize}
+		\item Herb Sutter - author of the proposal (code examples, exception features taken from his proposal) -  \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0709r1.pdf}{p0709r1}
+		
+		\item Andrzej Krzemiński for his blog about error codes and error conditions -  \href{https://akrzemi1.wordpress.com/2017/07/12/your-own-error-code/}{Your own error code}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Thank you}
+	\centering
+	Thank you for your attention!
+	\vfill
+	Questions?
 \end{frame}
 	
 \end{document}
-
