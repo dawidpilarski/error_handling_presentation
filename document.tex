@@ -59,8 +59,6 @@
 %  \tableofcontents[hideallsubsections]
 %\end{frame}
 
-\section{Introduction}
-
 \begin{frame}{Why am I here?}
 	Why should we bother with error handling?
 \end{frame}
@@ -76,7 +74,33 @@
 	\end{itemize}
 \end{frame}
 
+\begin{frame}{Who am I?}
+	\begin{columns}[onlytextwidth]
+		\begin{column}{0.7\textwidth}
+			\begin{itemize}
+				\item Senior Software Developer in TomTom
+				\item Member of the ISO/JTC1/SC22/WG21
+				\item C++ blog writer and C++ ewangelist
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.29\textwidth}
+			\includegraphics[width=\linewidth]{Dawid_Pilarski.jpg}
+		\end{column}	
+	\end{columns}
+\end{frame}
+
+
 \section{Error codes nowadays}
+
+\begin{frame}{What are the error codes?}
+	According to the \alert{Wikipedia} :
+	\begin{itemize}[<+- | alert@+>]
+		\item error code is an enumerated message,
+		\item that corresponds to the status of a specific software application.
+		\item They are typically used to identify faults, such as those in faulty hardware, software, or incorrect user input
+	\end{itemize}
+\end{frame}
+
 \begin{frame}{The error codes.}
 	\begin{itemize}[<+- | alert@+>]
 		\item Old. C-compatible. Comes from assembly time.
@@ -229,7 +253,7 @@ if(errcode == errc::no_such_file_or_directory){
 
 \begin{frame}[fragile]{Step 1 - define custom enum with error codes}
 	\begin{minted}{c++}
-enum class map_access_error : int {
+enum class map_access_error {
   SUCCESS, // zero means success
   MAP_NOT_INSTALLED,
   LACK_OF_PERMISSION,
@@ -519,7 +543,13 @@ class map_error : public std::runtime_error{};
 		frame-based  & overhead & fast \\ \hline
 		table-based & almost no overhead & slow \\ \hline
 	\end{tabular}
+
+	\vskip 1em
+
+	\centering
+	No matter the strategy binaries with exceptions enabled result in a big binary.
 \end{frame}
+
 
 \begin{frame}{Exceptions summary}
 	\begin{columns}[T]
@@ -573,7 +603,6 @@ class map_error : public std::runtime_error{};
 			\item Let the compiler generate boilerplate code for error propagation
 		\end{itemize}
 	\end{block}
-
 	Let's call those \emph{\color{amethyst}static exceptions}
 \end{frame}
 	
