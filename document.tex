@@ -1,427 +1,744 @@
-\documentclass[10pt,a4paper]{beamer}
-\usetheme{Copenhagen}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
+\documentclass[10pt]{beamer}
+
+\usetheme[progressbar=frametitle, block=fill]{metropolis}
+\usepackage{xcolor}
 \usepackage{multirow}
-\usepackage{graphicx}
-\usepackage{colortbl}
+\usepackage{pgfpages}
 \usepackage{pifont}
-\usepackage[cache=false]{minted}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\setbeamertemplate{note page}{\insertnote}
+%\setbeameroption{show notes on second screen=left}
+\setbeameroption{hide notes}
+\definecolor{amethyst}{rgb}{0.5, 0.4, 1.0}
+\definecolor{amethystgrey}{rgb}{0.85, 0.85, 1.0}
+\definecolor{amethystdark}{rgb}{0.4, 0.3, 0.9}
+\definecolor{orangedark}{rgb}{0.0, 0.9, 0}
+%\definecolor{titlebg}{HTML}{4e8074}
+%\definecolor{titlebg}{HTML}{3e7985}
+\definecolor{titlebg}{HTML}{fbf8ff}
+\definecolor{font}{HTML}{23373b}
 
-\setminted{fontsize=\footnotesize}
+%\setbeamercolor{title}{fg=amethyst, bg=amethyst}
+\setbeamercolor{frametitle}{fg= font, bg=titlebg}
+%\setbeamercolor{section title}{black}
+%\setbeamercolor{structure}{fg=amethyst, bg=amethyst}
+\setbeamercolor{progress bar}{ fg = amethyst, bg= amethystgrey }
+%\setbeamercolor{itemize item}{fg=amethyst,bg=white}
+\setbeamercolor{alerted text}{fg=amethystdark}
+%\setbeamercolor{title separator}{ ... }
+%\setbeamercolor{progress bar in head/foot}{ ... }
+%\setbeamercolor{progress bar in section page}{ ... }
 
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+\usepackage{booktabs}
+\usepackage[scale=2]{ccicons}
+
+\usepackage{minted}
+
+\usepackage{pgfplots}
+
+\usepackage{xspace}
+
+\title{Futuristic Error Handling}
+\subtitle{Error handling in C++ today and tomorrow}
+%\logo{\includegraphics[width=0.05\linewidth]{logo.png}}
+% \date{\today}
 \date{}
 \author{Dawid Pilarski}
-
-\title{Error handling in C++}
-\subtitle{\href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0709r1.pdf}{p0709r1} , \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0323r3.pdf}{p0323r3}}
-
-\AtBeginSection[]
-{
-	\begin{frame}<beamer>
-	\frametitle{Plan}
-	\tableofcontents[currentsection]
-\end{frame}
-}
+\institute{dawid.pilarski@panicsofware.com}
 
 \begin{document}
 
+\maketitle
 
-\begin{frame}
-	\titlepage
+%\begin{frame}{Table of contents}
+%  \setbeamertemplate{section in toc}[sections numbered]
+%  \tableofcontents[hideallsubsections]
+%\end{frame}
+
+\begin{frame}{Why am I here?}
+	Why should we bother with error handling?
 \end{frame}
 
-\begin{frame}
-	\tableofcontents
-\end{frame}
-
-\section{Current state of error handling}
-\begin{frame}{Error handling and performance}
+\begin{frame}{Recommendable error handling mechanism}
+	\note{Q: ask which mechanism would be chosen}
+	Which error mechanism would you choose?
 	
 	There exist two common strategies for error handling:
 	\begin{itemize}
-		\item error codes
-		\item exceptions
+		\item error codes?
+		\item exceptions?
 	\end{itemize}
-
 \end{frame}
 
-\subsection{Error codes}
-\begin{frame}[fragile]{Error codes - example fopen}
+\begin{frame}{Who am I?}
+	\begin{columns}[onlytextwidth]
+		\begin{column}{0.7\textwidth}
+			\begin{itemize}
+				\item Senior Software Developer in TomTom
+				\item Member of the ISO/JTC1/SC22/WG21
+				\item C++ blog writer and C++ ewangelist
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.29\textwidth}
+			\includegraphics[width=\linewidth]{Dawid_Pilarski.jpg}
+		\end{column}	
+	\end{columns}
+\end{frame}
+
+\section{Error codes nowadays}
+
+\begin{frame}{What are the error codes?}
+	According to the \alert{Wikipedia} :
+	\begin{itemize}[<+- | alert@+>]
+		\item error code is an enumerated message,
+		\item that corresponds to the status of a specific software application.
+		\item They are typically used to identify faults, such as those in faulty hardware, software, or incorrect user input
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{The error codes.}
+	\begin{itemize}[<+- | alert@+>]
+		\item Old. C-compatible. Comes from assembly time.
+		\item Machine friendly.
+		\item Super fast.
+		\item Used till today.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Error code example}
 	\begin{minted}{c++}
-/* fopen example */
-#include <stdio.h>
-int main ()
-{
-  FILE * pFile;
-  pFile = fopen ("myfile.txt","w");
-  if (pFile!=NULL)
-  {
-    //do stuff
-  } else {
-    //how do I know if everything is fine?
-    
-    switch(errno){
-    // 
-    }
-  }
-  return 0;
-}
+int sqlite3_open( const char *filename, sqlite3 **ppDb );
 	\end{minted}
-\end{frame}
-
-
-\begin{frame}[fragile]{Error code - better approach}
-	\begin{minted}{c++}
-// declaration
-int sqlite3_open( const char *filename,
-                  sqlite3 **ppDb /* OUT: SQLite db handle */);
 	
-//usage
-int open_status = sqlite3_open(/* ... */);
+	\pause
+	
+	\hrulefill
+	
+	\begin{minted}{c++}
+int open_status = sqlite3_open(/* ... */ );
 if(open_status == SQLITE_OK){
   // make use of opened database
 } else if( open_status == SQLITE_CANTOPEN_ISDIR ) {
   // handle the error
 }
 	\end{minted}
-
-
-	\begin{block}{further improvements:}
-		\begin{itemize}
-			\item enums
-			\item error code taken as reference
-		\end{itemize}	
-	\end{block}
-\end{frame}
-
-\begin{frame}[fragile]{C++ 11 approach to the error codes }
-	There are 3 types, that C++ 11 added to support error codes.
-	
-	\vskip 1em
-	
-	\begin{itemize}
-		\item \href{https://en.cppreference.com/w/cpp/error/error_code}{\color{blue}\texttt{std::error\_code}}
-		\item \href{https://en.cppreference.com/w/cpp/error/error_condition
-			}{\color{blue}\texttt{std::error\_condition}}
-		\item \href{https://en.cppreference.com/w/cpp/error/error_category}{\color{blue}\texttt{std::error\_category}}
-	\end{itemize}
 	
 \end{frame}
 
-\subsection{Exceptions}
-\begin{frame}[fragile]{But don't forget about exceptions}
-	And so there are also exceptions.
-	
-	\vskip 1em
-	How could things look like with exceptions:
-	\vskip 1em
-	
-	\begin{minted}{c++}
-#include <stdio.h>
-int main ()
-{
-  try {
-    FILE* pFile = fopen ("myfile.txt","w");
-    //stuff here
-  }
-  catch(std::exception& e){
-    //handle error
-  }
-  return 0;
-}
-	\end{minted}
-	
-\end{frame}
-
-\begin{frame}{"types" of exceptions}
-	We can divide implementation of exceptions into 2 types:
-	\begin{itemize}
-		\item table-based implementation
-		\item frame based implementation
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{"You don't pay for what you don't use"}
-	\begin{block}{table based exceptions}
-		optimized for scenarios when usually exceptions are not throwed
-	\end{block}
-
-	\begin{block}{frame based exception}
-		optimized for scenarios when exceptions are thrown often
-	\end{block}
-
-	\begin{block}{binary size}
-		no matter which implementation is chosen the binary size grows
-		significantly even when exceptions are not used.
-	\end{block}
-
-\end{frame}
-
-\begin{frame}[fragile]{Let's stick to error codes or provide dual API}
-	People from standardization commitee tried to do that and failed :)
-	
-	\vskip 2em
-	
-	Example of such failure can be functions from filesystem library
-	
-	\vskip 2em
-	
-	\begin{minted}{c++}
-directory_iterator& operator++();
-directory_iterator& increment( std::error_code& ec );
-	\end{minted}
-	
-	\vskip 2em 
+\begin{frame}{Handle the error}
+	How to handle the error correctly?
 	
 	\pause
 	
-	The increment function even though is meant to return errors through
-	\texttt{std::error\_code} can return some of the errors through exceptions.
+	\begin{itemize}[<+- | alert@+>]
+		\item \texttt{std::terminate()}
+		\item take the error callback
+		\item propagate the error to the caller
+	\end{itemize}
 	
 \end{frame}
 
-\begin{frame}[fragile]{Error codes continued}
+\section{Error codes - propagation}
+
+\begin{frame}[fragile]{Propagation}
 	\begin{minted}{c++}
-A::A(){ 	// a constructor here
-  /* some initialization happening */
-  /* but whoops an error occurs, what now?*/
+void foo_bar(int& errc /*...*/){
+  errc = foo();
+  // ...
+  errc = bar();		
+  // ...
+}
+	\end{minted}
+	
+\end{frame}
+
+\begin{frame}[fragile]{Error translation}
+	\begin{minted}{c++}
+void foo_bar(foo_bar_errc errc&){
+  foo_errc ferrc = foo();
+  errc = translate_foo(ferrc);
+  // ...
+  bar_errc berrc = bar();
+  errc = translate_foo(berrc);
 }
 	\end{minted}
 \end{frame}
 
-\begin{frame}[fragile]{Error codes continued}
+\begin{frame}{C-style error codes summary}
+	So we can see {\color{red}serious disadvantages} (except for {\color{blue}obvious advantages}):
+	
+	\begin{itemize}[<+- | alert@+>]
+		\item success path same as error path
+		\item boiler plate code
+		\item cluttering code with translations
+	\end{itemize}
+\end{frame}
+	
 
-	\begin{columns}
-		\begin{column}{0.48\linewidth}
-			\begin{minted}{c++}
-A::A(){  //a constructor here
-  /* some initialization*/
-  /* but whoops an error occurs */
+\section{Error codes - modern approach}
+\begin{frame}{Standard library support - what do we need?}
+	\begin{itemize}
+		\item A way to define new error codes
+		\item A way to distinguish domain of the error codes
+	\end{itemize}
+\end{frame}
 
-  throw error; 
+\begin{frame}{Standard library support - what we get?}
+	We get three new major types:
+	\begin{itemize}
+		\item std::error\_code
+		\item std::error\_category
+		\item std::error\_condition
+	\end{itemize}
+\end{frame}
+	
+
+\begin{frame}[fragile]{std::error\_code in action}
+	\begin{minted}{c++}
+std::error_code errcode;
+is_regular_file("non_existent_directory", errcode);
+
+std::cout << errcode << std::endl;
+std::cout << errcode.value() << std::endl;
+std::cout << errcode.message() << std::endl;
+std::cout << errcode.category().name() << std::endl;
+	\end{minted}
+	
+	\hrulefill
+	
+	\begin{block}{output}
+	\texttt{\\
+		\$ generic:2 \\
+		\$ 2 \\
+		\$ No such file or directory \\
+		\$ generic}	
+	\end{block}
+	
+\end{frame}
+
+\begin{frame}[fragile]{Acting upon error}
+	\begin{minted}{c++}
+std::error_code errcode;
+is_regular_file("non_existent_file", errcode);
+  
+if(errcode == errc::no_such_file_or_directory){
+  // creating a file
 }
+	\end{minted}
+\end{frame}
+
+\begin{frame}{Let's define our own error code}
+	Steps to create own error code:
+	\begin{itemize}[<+- | alert@+>]
+		\item define custom enum with error codes
+		\item inform, that the enum is an error code
+		\item create custom error category (or use existing one)
+		\item create enum to error code factory function
+		\item define custom error condition
+		\begin{itemize}
+			\item define error condition enum
+			\item inform the world about new error condition enum
+			\item make conversion function from new error code to error condition
+		\end{itemize}
+		\item enjoy!
+	\end{itemize}
+\end{frame}
+
+\section{Error codes - \\ defining custom error codes}
+
+\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
+	\begin{minted}{c++}
+enum class map_access_error {
+  SUCCESS, // zero means success
+  MAP_NOT_INSTALLED,
+  LACK_OF_PERMISSION,
+  MAP_CORRUPTED,
+};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 2 - inform the world about new error code type}
+\begin{minted}{c++}
+namespace std{
+  template <> struct
+  is_error_code_enum<map_access_error> : std::true_type{};
+}
+\end{minted}
+	
+\end{frame}
+
+\begin{frame}[fragile]{Step 3 - custom error category}
+	
+	\begin{minted}{c++}
+struct map_access_domain : std::error_category {
+  const char *name() const noexcept override;		
+  std::string message(int errc) const override;
+};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 3 - custom error category}
+\begin{minted}{c++}
+const char* map_access_domain::name() const noexcept{
+  return "Map Access Error";
+}
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 3 - custom error category}
+	\begin{minted}{c++}
+std::string map_access_domain::message(int errc) const{
+  switch (static_cast<map_access_error>(errc)){
+    case map_access_error::SUCCESS:
+      return "SUCCESS";
+    case map_access_error::MAP_NOT_INSTALLED:
+      return "MAP IS NOT INSTALLED ON THE DEVICE";
+    case map_access_error::LACK_OF_PERMISSION:
+      return "MISSING PERMISSIONS TO READ THE MAP";
+    case map_access_error::MAP_CORRUPTED:
+      return "MAP IS CORRUPTED. REINSTALLATION NEEDED";
+    default:
+      return "ERROR UNKNOWN";
+  }
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 4 - factory function}
+
+	\begin{minted}{c++}
+namespace std{
+  template <typename ErrorCode>
+  error_code(typename std::enable_if<
+                        is_error_code_enum<
+                          ErrorCode>
+                        ::value, ErrorCode>
+                      ::type errcode) noexcept 
+             : error_code(make_error_code(errcode))
+  {}
+}
+	\end{minted}
+	
+\end{frame}
+
+\begin{frame}[fragile]{Step 4 - factory function}
+	\begin{minted}{c++}
+std::error_code make_error_code(map_access_error errc){
+  return {static_cast<int>(errc), map_access_error_domain};
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+enum class calculate_route_error : int {
+  SUCCESS,
+  MAP_ERROR,
+  COULD_NOT_FIND_PATH,
+  WRONG_ARGUMENTS
+};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+
+namespace std{
+  template <> struct
+  is_error_condition_enum<calculate_route_error>
+                             : std::true_type{};
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+struct calculate_route_error_domain : std::error_category{
+  const char *name() const noexcept override;
+  std::string message(int errc) const override;
+  bool equivalent(const std::error_code &errc, int condition) 
+                                      const noexcept override;
+};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}{c++}
+bool calculate_route_error_domain::equivalent(
+          const std::error_code &errc, int condition) 
+                                      const noexcept{
+                                      
+  switch (static_cast<calculate_route_error>(condition)){
+    case calculate_route_error::SUCCESS:
+      if(errc.value() == 0)
+        return true;
+    case calculate_route_error::MAP_ERROR:
+      if(errc.category().name() == map_access_domain().name())
+        return true;
+        
+    // other cases
+  }
+  return false;
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}{c++}
+
+std::error_code errcode;
+auto route = calculate_route({}, {}, {}, errcode);
+
+if(!errcode)
+  return route;
+
+std::cout << errcode.category().name() << " : " <<
+             errcode.message() << std::endl;
+
+if(errcode == calculate_route_error::MAP_ERROR)
+  reinstall_map();
+else if (errcode == calculate_route_error::COULD_NOT_FIND_PATH)
+  inform_user_no_path_found();
+else if (errcode == calculate_route_error::WRONG_ARGUMENTS)
+  std::terminate();
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}{c++}
+route calculate_route(point a, point b, route_options options,
+                      std::error_code& errc){
+  auto map_database = database(errc);
+  if (errc) return {};
+
+  auto a_handle = map_database.find(a, errc);
+  if(errc) return {};
+  auto b_handle = map_database.find(b, errc);
+  if(errc) return {};
+
+  route result_route = find_path(a_handle, b_handle,
+                                 options, errc);
+  if(errc) return {};
+
+  return result_route;
+}
+	\end{minted}
+\end{frame}
+
+	
+\section{Error codes - summary}
+
+\begin{frame}{Error codes summary}
+	\begin{columns}[T]
+		\begin{column}{0.48\linewidth}
+			Pros 
+			\vfill
+			\begin{itemize}
+				\item Performance
+				\begin{itemize}
+					\item speed
+					\item small (occupied memory)
+					\item speed predictability
+					\item memory occupation predictability
+					\item C compatibility
+				\end{itemize}
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\linewidth}
+			Cons
+			\vfill
+			\begin{itemize}
+				\item business logic cluttering
+				\item massive amount of boilerplate code
+				\item template magic in case of std::error\_code
+			\end{itemize}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+
+\section{Exceptions to the rescue (?)}
+
+\begin{frame}[fragile]{Brief look at the example}
+	\begin{minted}{c++}
+try{
+  auto route = calculate_route(/*arguments*/);
+} catch(map_error& err){
+  // logic
+} catch(path_not_found& err){
+  // logic
+} /* catch(std::invalid_argument){
+
+} */
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Brief look at the example}
+	\begin{minted}{c++}
+route calculate_route(point a, point b,
+                      route_options options){
+                      
+  auto map_database = database();
+
+  auto a_handle = map_database.find(a);
+  auto b_handle = map_database.find(b);
+
+  route result_route = find_path(a_handle, b_handle, options);
+
+  return result_route;
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Defining custom exception}
+	\begin{minted}{c++}
+class map_error : public std::runtime_error{};
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Dark side of the exceptions}
+	\begin{itemize}[<+- | alert@+>]
+		\item Still translation of exceptions is needed
+		\item For performance reasons 50\% of projects have disabled exceptions
+	\end{itemize}
+\end{frame}
+
+\section{C++ - zero overhead rule}
+
+\begin{frame}{What is zero overhead?}
+	\begin{itemize}[<+- | alert@+>]
+		\item language features {\color{amethyst}can} introduce overhead
+		\item "you don't pay for what you don't use"
+		\item if you use a feature it should be as afficient as handcoded version.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Exceptions not to the rescue}
+		\centering
+		\textcolor{red}{Exceptions break the zero overhead rule.}
+		
+		But why?
+\end{frame}
+
+\section{Exceptions - how do they work?}
+
+\begin{frame}{Approaches towards implementation}
+	Two major kinds of implementation:
+	\begin{itemize}[<+- | alert@+>]
+		\item additional data added to the frame stack
+		\item additional data added to someplace on the heap
+	\end{itemize}
+\end{frame}
+	
+\begin{frame}{Implementations' consequences}
+	\centering
+	\begin{tabular}{p{3cm}|p{3cm}|p{3cm}}
+		\multirow{2}{*}{implementation}& \multicolumn{2}{c}{performance} \\
+		& without throwing & with throwing  \\ \hline \hline
+		frame-based  & overhead & fast \\ \hline
+		table-based & almost no overhead & slow \\ \hline
+	\end{tabular}
+
+	\vskip 1em
+
+	\centering
+	No matter the strategy binaries with exceptions enabled result in a big binary.
+\end{frame}
+
+
+\begin{frame}{Exceptions summary}
+	\begin{columns}[T]
+		\begin{column}{0.48\linewidth}
+			Pros
+			\begin{itemize}
+				\item differentiated error and success paths
+				\item automagical error propagation
+				\item little/no boilerplate code
+			\end{itemize}
+		\end{column}
+	\begin{column}{0.48\linewidth}
+			Cons
+			\begin{itemize}
+				\item Performance
+				\begin{itemize}
+					\item slow
+					\item not deterministic speed
+					\item not deterministic storage occupation
+					\item not compatible with C
+					\item not usable in any safety standards (e.g. MISRA)
+				\end{itemize}
+			\end{itemize}
+	\end{column}
+	\end{columns}
+\end{frame}
+
+\section{Possible future of error handling.}
+
+\begin{frame}{Perfect error handling mechanism}
+	\centering
+	\begin{tabular}{|c|c|c|}
+		\hline
+		feature & exceptions & std::error\_code \\ \hline \hline
+		distinct error path & yes & no \\ \hline
+		distinct success path & yes & no \\ \hline \hline
+		unhandled error propagation & yes & no \\ \hline
+		unhandled error is visible & no & yes \\ \hline
+		uncluttered business logic & yes & no \\ \hline \hline
+		RTTI required & yes & no \\ \hline
+		deterministic space/time occupation & no & yes \\ \hline
+		time cost == return & no & yes \\ \hline \hline
+		C compatibility & no & no \\ \hline
+	\end{tabular}
+\end{frame}
+
+\begin{frame}{Key idea for improvement}
+	\begin{block}{Key ideas}
+		\begin{itemize}[<+- | alert@+>]
+			\item Let's use the return channel to return the std::error
+			\item Let the compiler generate boilerplate code for error propagation
+		\end{itemize}
+	\end{block}
+	Let's call those \emph{\color{amethyst}static exceptions}
+\end{frame}
+	
+\begin{frame}{What is std::error}
+	\begin{itemize}
+		\item size of error\_code is explicitly defined
+		\item has same properties as std::error\_code
+		\item implements trivially relocatable semantics
+	\end{itemize}
+\end{frame}
+	
+\begin{frame}[fragile]{How to use return channel for std::error}
+	\begin{columns}[T]
+		\begin{column}{0.48\linewidth}
+			We can do that manually using variant:
+			\begin{minted}{c++}
+using Result = 
+      variant<T, std::error>;			
+Result foo();
 			\end{minted}
 		\end{column}
-	\pause
 		\begin{column}{0.48\linewidth}
+			But this can be nicer with syntax sugar:
 			\begin{minted}{c++}
-A::A(){  //a constructor here
-  /* some initialization */
-  /* but whoops an error occurs */
-}	
-
-bool A::IsValid(){ 
-  // was init successful?
-} 
-	
+T foo() throws;
 			\end{minted}
 		\end{column}
 	\end{columns}
 \end{frame}
+
+\begin{frame}[fragile]{Static exceptions example}
 	
-\begin{frame}{Current exception handling summary}
-	\centering
-
-	\begin{figure}
-	
-		\resizebox{0.9\linewidth}{!}{%
-			\begin{tabular}{c||c|c}
-				feature & exceptions & error codes \\ \hline \hline
-				constructors usability & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
-				concise code & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
-				performance & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-				binary size & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-				safety & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-			\end{tabular}
-		}
-		\caption{comparison of error handling mechanisms' capabilities}	
-	\end{figure}
-	
-
-\end{frame}
-
-\section{\texttt{std::expected}}
-\begin{frame}[fragile]{further with error codes}
-\begin{block}{Idea}
-	Let's embed the return error code with expected type
-\end{block}
-
-\vfill
-
-\begin{minted}{c++}
-template <typename T, typename E>
-class expected;
-\end{minted}
-\end{frame}
-
-
-
-\begin{frame}[fragile]{Usage example}
-
-\begin{columns}
-\begin{column}{0.48\linewidth}
 	\begin{minted}{c++}
-enum class arithmetic_errc {
-  divide_by_zero,
-  not_integer_division,      
-  integer_divide_overflows
-};
-	\end{minted}
-\end{column}
-\pause
-\begin{column}{0.48\linewidth}
-	\begin{minted}{c++}
-using errc = arithmetic_errc;
-expected<double, errc>
-safe_divide(double i, double j){
-  if(j==0){ 
-    return 
-    unexpected(errc::divide_by_zero);
-  } else 
-    return i/j;
+string f() throws {
+  if (flip_a_coin()) throw arithmetic_error::something;
+  return "xyzzy"s + "plover"; 
+}
+
+string g() throws { return f() + "plugh"; } 
+
+int main() {
+  try {
+    auto result = g();
+    cout << "success, result is: " << result;
+  } catch(error err) {
+    cout << "failed, error is: " << err.error();
+  }
 }
 	\end{minted}
-\end{column}
-\end{columns}
 \end{frame}
 
-\section{New exception model}
-\begin{frame}{New exception model - idea}
-	\begin{center}
-		Let's recall the comparison of exceptions and error codes:
-	\end{center}
-	
-	\begin{figure}
-		\resizebox{0.9\linewidth}{!}{%
-			\begin{tabular}{c||c|c}
-				feature & exceptions & error codes \\ \hline \hline
-				constructors usability & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
-				concise code & \cellcolor{green}\checkmark & \cellcolor{red}\ding{56} \\ \hline
-				performance & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-				binary size & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-				safety & \cellcolor{red}\ding{56} & \cellcolor{green}\checkmark \\ \hline
-			\end{tabular}
-		}
-	\end{figure}
-	
+\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{minted}{c++}
+int f1() throws;	
+int f2() throws;
+
+int main(){
+// return f1() + f2(); // error
+try return f1() + f2();// ok, covers both 
+return try f1()+ f2();
+}
+	\end{minted}
 \end{frame}
 
-\begin{frame}{Learning from mistakes}
-	\centering
-	Conclusion:
+\begin{frame}{Cool! But what about C compatibility}
+	It is possible, that C will be ABI compatible with static exceptions!
+	
+	This implies:
 	
 	\begin{itemize}
-		\item exceptions gives nice code
-		\item error codes provides performance and reliability
-	\end{itemize}
-
-	\begin{alertblock}{Next step:}
-	Let's use exception syntax for error codes-like handling.
-	\end{alertblock}
-	
-\end{frame}
-
-\begin{frame}{Idea}
-
-	\begin{alertblock}{using return channel}
-		Let's make throwing exceptions happen using return channels from functions
-	\end{alertblock}
-\end{frame}
-
-\begin{frame}{using return channel}
-	How to achieve that:
-	\begin{itemize}
-		\item Function needs to return some kind of a \texttt{std::variant<T, E>}
-		\item The \texttt{sizeof(E)} in above needs to be known upfront
-		\item Each exception must have same interface
-		\item Compiler must know how to \texttt{move} the object
-	\end{itemize}
-	
-	Other things to consider:
-	\begin{itemize}
-		\item co-existence with dynamic exceptions
+		\item Exceptions could be thrown from C++, passed through C and catched again in C++
+		\item We could handle C++ exceptions in C
+		\item We could handle C exceptions in C++
 	\end{itemize}
 \end{frame}
-	
-\begin{frame}{\texttt{std::error}}
-	features of \texttt{std::error} includes:
+
+\begin{frame}[fragile]{Short story about C language}
+	\begin{minted}{c++}
+_Either(int, std_error) somefunc(int a){
+  return a > 5 ? _Expected(a) : _Unexpected(a);
+}
+
+// ...
+
+_Either(int, std_error) ret = somefunc(a);
+if(ret)
+  printf("%d\n", ret.expected);
+else
+  printf("%f\n", ret.unexpected);
+	\end{minted}
+\end{frame}
+
+\begin{frame}{Static exceptions summary}
+\centering
+	\begin{tabular}{|c|c|}
+		\hline
+		feature & static exceptions \\ \hline \hline
+		distinct error path & yes \\ \hline
+		distinct success path & yes \\ \hline \hline
+		unhandled error propagation & yes \\ \hline
+		unhandled error is visible & yes \\ \hline
+		uncluttered business logic & yes \\ \hline \hline
+		RTTI required & no \\ \hline
+		deterministic space/time occupation & yes \\ \hline
+		time cost == return & yes \\ \hline \hline
+		C compatibility & maybe \\ \hline
+	\end{tabular}
+\end{frame}
+
+\begin{frame}{Possible issue}
+	We will end up having 3 ways to handle error codes:
 	\begin{itemize}
-		\item trivially-relocatable semantics
-		\item the \texttt{error\_category} is able to represent:
-		\begin{itemize}
-			\item C++ standard library exceptions
-			\item POSIX system codes
-			\item Windows' \texttt{NSTATUS}
-			\item and other common error domains
-		\end{itemize}
+		\item dynamic exceptions
+		\item static exceptions
+		\item old style error codes
 	\end{itemize}
 
 	\vfill
 
 	\texttt{std::error} type can be treated as a next-gen \texttt{std::error\_code} type.
 \end{frame}
-	
-	
-\subsection{How can new exception handling look like}
 
+\begin{frame}{Bibliography}
+	This presentation wouldn't be possible without:
 	
-\begin{frame}[fragile]{The forgotten \texttt{throws}}
-	
-	Since we no longer need to know the type of the exception,
-	we can notify about function throwing the static exception with \texttt{throws}
-	static exception specifier
-	
-	\begin{minted}{c++}
-void foo() throws {
-  throw arithmetic_error::something;
-}
-	\end{minted}
-	
+	\begin{itemize}
+		\item Herb Sutter - author of the proposal (code examples, exception features taken from his proposal) -  \href{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0709r1.pdf}{p0709r1}
+		
+		\item Andrzej Krzemiński for his blog about error codes and error conditions -  \href{https://akrzemi1.wordpress.com/2017/07/12/your-own-error-code/}{Your own error code}
+	\end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{more examples}
-
-	\begin{minted}{c++}
-string foo() throws {
-  //dynamic exception will be translated to static one
-  throw std::runtime_error; 
-}
-	\end{minted}
-	
-	\hfill
-	
-	\begin{minted}{c++}
-try {
-  auto result = g();
-  cout << "success, result is: " << result;
-}
-catch(error err) { // catch by value is fine
-  cout << "failed, error is: " << err.error();
-}
-	\end{minted}
-	
-	
-\end{frame}
-
-\begin{frame}[fragile]{more examples}
-	\begin{minted}{c++}
-int caller2(int i, int j) {
-  try {
-    return safe_divide(i, j);
-  } catch(error e) {
-    if (e == arithmetic_errc::divide_by_zero)
-      return 0;
-    if (e == arithmetic_errc::not_integer_division)
-      return i / j; // ignore
-    if (e == arithmetic_errc::integer_divide_overflows)
-      return INT_MIN;
-  }
-}
-	\end{minted}
-	
+\begin{frame}{Thank you}
+	\centering
+	Thank you for your attention!
+	\vfill
+	Questions?
 \end{frame}
 
 
