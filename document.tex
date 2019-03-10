@@ -80,7 +80,7 @@
 			\begin{itemize}
 				\item Senior Software Developer in TomTom
 				\item Member of the ISO/JTC1/SC22/WG21
-				\item C++ blog writer and C++ ewangelist
+				\item C++ blog writer and C++ evangelist
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.29\textwidth}
@@ -118,7 +118,7 @@ int sqlite3_open( const char *filename, sqlite3 **ppDb );
 	
 	\hrulefill
 	
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines={2,4}]{c++}
 int open_status = sqlite3_open(/* ... */ );
 if(open_status == SQLITE_OK){
   // make use of opened database
@@ -128,6 +128,43 @@ if(open_status == SQLITE_OK){
 	\end{minted}
 	
 \end{frame}
+
+\begin{frame}[fragile]{Error code example}
+\begin{minted}{c++}
+int sqlite3_open( const char *filename, sqlite3 **ppDb );
+\end{minted}
+
+\hrulefill
+
+\begin{minted}[highlightlines={3}]{c++}
+int open_status = sqlite3_open(/* ... */ );
+if(open_status == SQLITE_OK){
+  // make use of opened database
+} else if( open_status == SQLITE_CANTOPEN_ISDIR ) {
+  // handle the error
+}
+\end{minted}
+
+\end{frame}
+
+\begin{frame}[fragile]{Error code example}
+\begin{minted}{c++}
+int sqlite3_open( const char *filename, sqlite3 **ppDb );
+\end{minted}
+
+\hrulefill
+
+\begin{minted}[highlightlines={5}]{c++}
+int open_status = sqlite3_open(/* ... */ );
+if(open_status == SQLITE_OK){
+// make use of opened database
+} else if( open_status == SQLITE_CANTOPEN_ISDIR ) {
+// handle the error
+}
+\end{minted}
+
+\end{frame}
+
 
 \begin{frame}{Handle the error}
 	How to handle the error correctly?
@@ -145,7 +182,7 @@ if(open_status == SQLITE_OK){
 \section{Error codes - propagation}
 
 \begin{frame}[fragile]{Propagation}
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines=1]{c++}
 void foo_bar(int& errc /*...*/){
   errc = foo();
   // ...
@@ -156,8 +193,20 @@ void foo_bar(int& errc /*...*/){
 	
 \end{frame}
 
+\begin{frame}[fragile]{Propagation}
+\begin{minted}[highlightlines={2,4}]{c++}
+void foo_bar(int& errc /*...*/){
+errc = foo();
+// ...
+errc = bar();		
+// ...
+}
+\end{minted}
+
+\end{frame}
+
 \begin{frame}[fragile]{Error translation}
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines={3,6}]{c++}
 void foo_bar(foo_bar_errc errc&){
   foo_errc ferrc = foo();
   errc = translate_foo(ferrc);
@@ -189,7 +238,7 @@ void foo_bar(foo_bar_errc errc&){
 
 \begin{frame}{Standard library support - what we get?}
 	We get three new major types:
-	\begin{itemize}
+	\begin{itemize}[<+- | alert@+>]
 		\item std::error\_code
 		\item std::error\_category
 		\item std::error\_condition
@@ -251,21 +300,62 @@ if(errcode == errc::no_such_file_or_directory){
 \section{Error codes - \\ defining custom error codes}
 
 \begin{frame}[fragile]{Step 1 - define custom enum with error codes}
-	\begin{minted}{c++}
-enum class map_access_error {
+	\begin{minted}[highlightlines={1}]{c++}
+enum class open_file_error {
   SUCCESS, // zero means success
-  MAP_NOT_INSTALLED,
-  LACK_OF_PERMISSION,
-  MAP_CORRUPTED,
+  NO_SUCH_FILE_OR_DIRECTORY,
+  FILE_IS_DIRECTORY,
+  LACK_OF_RESOURCES,
+  FILE_BROKEN,
+  NO_PERMISSIONS
 };
 	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
+\begin{minted}[highlightlines={3,4}]{c++}
+enum class open_file_error {
+  SUCCESS, // zero means success
+  NO_SUCH_FILE_OR_DIRECTORY,
+  FILE_IS_DIRECTORY,
+  LACK_OF_RESOURCES,
+  FILE_BROKEN,
+  NO_PERMISSIONS
+};
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
+\begin{minted}[highlightlines={5,6}]{c++}
+enum class open_file_error {
+  SUCCESS, // zero means success
+  NO_SUCH_FILE_OR_DIRECTORY,
+  FILE_IS_DIRECTORY,
+  LACK_OF_RESOURCES,
+  FILE_BROKEN,
+  NO_PERMISSIONS
+};
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
+\begin{minted}[highlightlines={7}]{c++}
+enum class open_file_error {
+  SUCCESS, // zero means success
+  NO_SUCH_FILE_OR_DIRECTORY,
+  FILE_IS_DIRECTORY,
+  LACK_OF_RESOURCES,
+  FILE_BROKEN,
+  NO_PERMISSIONS
+};
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]{Step 2 - inform the world about new error code type}
 \begin{minted}{c++}
 namespace std{
   template <> struct
-  is_error_code_enum<map_access_error> : std::true_type{};
+  is_error_code_enum<open_file_error> : std::true_type{};
 }
 \end{minted}
 	
@@ -274,7 +364,7 @@ namespace std{
 \begin{frame}[fragile]{Step 3 - custom error category}
 	
 	\begin{minted}{c++}
-struct map_access_domain : std::error_category {
+struct open_file_error_domain : std::error_category {
   const char *name() const noexcept override;		
   std::string message(int errc) const override;
 };
@@ -283,29 +373,98 @@ struct map_access_domain : std::error_category {
 
 \begin{frame}[fragile]{Step 3 - custom error category}
 \begin{minted}{c++}
-const char* map_access_domain::name() const noexcept{
-  return "Map Access Error";
+const char* open_file_error_domain::name() const noexcept{
+  return "Open File Error";
 }
 \end{minted}
 \end{frame}
 
 \begin{frame}[fragile]{Step 3 - custom error category}
-	\begin{minted}{c++}
-std::string map_access_domain::message(int errc) const{
+	\begin{minted}[highlightlines={4,5}]{c++}
+std::string open_file_error_domain::message(int errc) const{
+  if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
   switch (static_cast<map_access_error>(errc)){
-    case map_access_error::SUCCESS:
-      return "SUCCESS";
-    case map_access_error::MAP_NOT_INSTALLED:
-      return "MAP IS NOT INSTALLED ON THE DEVICE";
-    case map_access_error::LACK_OF_PERMISSION:
-      return "MISSING PERMISSIONS TO READ THE MAP";
-    case map_access_error::MAP_CORRUPTED:
-      return "MAP IS CORRUPTED. REINSTALLATION NEEDED";
-    default:
-      return "ERROR UNKNOWN";
+    case open_file_error::SUCCESS:
+      return "Success.";
+    case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
+      return "File does not exist.";
+    case open_file_error::FILE_IS_DIRECTORY:
+      return "Cannot open directory.";
+    case open_file_error::LACK_OF_RESOURCES:
+      return "No available file descriptor";
+    case open_file_error::FILE_BROKEN:
+      return "File is corrupted."
+    case open_file_error::NO_PERMISSIONS:
+      return "Missing permissions to open the file."
   }
 }
 	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 3 - custom error category}
+\begin{minted}[highlightlines={6,7}]{c++}
+std::string open_file_error_domain::message(int errc) const{
+  if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
+  switch (static_cast<map_access_error>(errc)){
+    case open_file_error::SUCCESS:
+      return "Success.";
+    case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
+      return "File does not exist.";
+    case open_file_error::FILE_IS_DIRECTORY:
+      return "Cannot open directory.";
+    case open_file_error::LACK_OF_RESOURCES:
+      return "No available file descriptor";
+    case open_file_error::FILE_BROKEN:
+      return "File is corrupted."
+    case open_file_error::NO_PERMISSIONS:
+      return "Missing permissions to open the file."
+  }
+}
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 3 - custom error category}
+\begin{minted}[highlightlines={8-15}]{c++}
+std::string open_file_error_domain::message(int errc) const{
+  if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
+  switch (static_cast<map_access_error>(errc)){
+    case open_file_error::SUCCESS:
+      return "Success.";
+    case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
+      return "File does not exist.";
+    case open_file_error::FILE_IS_DIRECTORY:
+      return "Cannot open directory.";
+    case open_file_error::LACK_OF_RESOURCES:
+      return "No available file descriptor";
+    case open_file_error::FILE_BROKEN:
+      return "File is corrupted."
+    case open_file_error::NO_PERMISSIONS:
+      return "Missing permissions to open the file."
+  }
+}
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 3 - custom error category}
+\begin{minted}[highlightlines={2}]{c++}
+std::string open_file_error_domain::message(int errc) const{
+  if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
+  switch (static_cast<map_access_error>(errc)){
+    case open_file_error::SUCCESS:
+      return "Success.";
+    case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
+      return "File does not exist.";
+    case open_file_error::FILE_IS_DIRECTORY:
+      return "Cannot open directory.";
+    case open_file_error::LACK_OF_RESOURCES:
+      return "No available file descriptor";
+    case open_file_error::FILE_BROKEN:
+      return "File is corrupted."
+    case open_file_error::NO_PERMISSIONS:
+      return "Missing permissions to open the file."
+  }
+}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]{Step 4 - factory function}
@@ -313,11 +472,11 @@ std::string map_access_domain::message(int errc) const{
 	\begin{minted}{c++}
 namespace std{
   template <typename ErrorCode>
-  error_code(typename std::enable_if<
-                        is_error_code_enum<
-                          ErrorCode>
-                        ::value, ErrorCode>
-                      ::type errcode) noexcept 
+  error_code::error_code(typename std::enable_if<
+                                  is_error_code_enum<
+                                      ErrorCode>
+                                  ::value, ErrorCode>
+                         ::type errcode) noexcept 
              : error_code(make_error_code(errcode))
   {}
 }
@@ -327,19 +486,19 @@ namespace std{
 
 \begin{frame}[fragile]{Step 4 - factory function}
 	\begin{minted}{c++}
-std::error_code make_error_code(map_access_error errc){
-  return {static_cast<int>(errc), map_access_error_domain};
+std::error_code make_error_code(open_file_error errc){
+  return {static_cast<int>(errc), open_file_error_domain};
 }
 	\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]{Step 5 - custom error condition}
 	\begin{minted}{c++}
-enum class calculate_route_error : int {
+enum class library_error_condition : int {
   SUCCESS,
-  MAP_ERROR,
-  COULD_NOT_FIND_PATH,
-  WRONG_ARGUMENTS
+  WRONG_ARGUMENT,
+  OS_ERROR,
+  PERMISSIONS_ERROR
 };
 	\end{minted}
 \end{frame}
@@ -349,7 +508,7 @@ enum class calculate_route_error : int {
 
 namespace std{
   template <> struct
-  is_error_condition_enum<calculate_route_error>
+  is_error_condition_enum<library_error_condition>
                              : std::true_type{};
 }
 	\end{minted}
@@ -357,7 +516,7 @@ namespace std{
 
 \begin{frame}[fragile]{Step 5 - custom error condition}
 	\begin{minted}{c++}
-struct calculate_route_error_domain : std::error_category{
+struct library_error_domain : std::error_category{
   const char *name() const noexcept override;
   std::string message(int errc) const override;
   bool equivalent(const std::error_code &errc, int condition) 
@@ -368,15 +527,15 @@ struct calculate_route_error_domain : std::error_category{
 
 \begin{frame}[fragile]{Step 5 - custom error condition}
 	\begin{minted}{c++}
-bool calculate_route_error_domain::equivalent(
+bool library_error_domain::equivalent(
           const std::error_code &errc, int condition) 
                                       const noexcept{
                                       
-  switch (static_cast<calculate_route_error>(condition)){
-    case calculate_route_error::SUCCESS:
+  switch (static_cast<library_error>(condition)){
+    case library_error::SUCCESS:
       if(errc.value() == 0)
         return true;
-    case calculate_route_error::MAP_ERROR:
+    case library_error::WRONG_ARGUMENT:
       if(errc.category().name() == map_access_domain().name())
         return true;
         
@@ -503,7 +662,7 @@ class map_error : public std::runtime_error{};
 \begin{frame}[fragile]{Dark side of the exceptions}
 	\begin{itemize}[<+- | alert@+>]
 		\item Still translation of exceptions is needed
-		\item For performance reasons 50\% of projects have disabled exceptions
+		\item For performance related reasons about 50\% of projects have disabled exceptions
 	\end{itemize}
 \end{frame}
 
@@ -680,7 +839,7 @@ return try f1()+ f2();
 
 \begin{frame}[fragile]{Short story about C language}
 	\begin{minted}{c++}
-_Either(int, std_error) somefunc(int a){
+_Either(int, std_error) somefunc(int a){ fixme
   return a > 5 ? _Expected(a) : _Unexpected(a);
 }
 
