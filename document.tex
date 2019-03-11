@@ -1,3 +1,5 @@
+% !TeX options = -shell-escape
+
 \documentclass[10pt]{beamer}
 
 \usetheme[progressbar=frametitle, block=fill]{metropolis}
@@ -75,16 +77,19 @@
 \end{frame}
 
 \begin{frame}{Who am I?}
+			\centering \alert{Dawid Pilarski}
+			\vskip 1em
 	\begin{columns}[onlytextwidth]
 		\begin{column}{0.7\textwidth}
 			\begin{itemize}
 				\item Senior Software Developer in TomTom
 				\item Member of the ISO/JTC1/SC22/WG21
-				\item C++ blog writer and C++ evangelist
+				\item Member of the PKN KT {\tiny(programming languages)}
+				\item C++ blog writer
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.29\textwidth}
-			\includegraphics[width=\linewidth]{Dawid_Pilarski.jpg}
+				\includegraphics[width=\linewidth]{Dawid_Pilarski.jpg}				
 		\end{column}	
 	\end{columns}
 \end{frame}
@@ -157,9 +162,9 @@ int sqlite3_open( const char *filename, sqlite3 **ppDb );
 \begin{minted}[highlightlines={5}]{c++}
 int open_status = sqlite3_open(/* ... */ );
 if(open_status == SQLITE_OK){
-// make use of opened database
+  // make use of opened database
 } else if( open_status == SQLITE_CANTOPEN_ISDIR ) {
-// handle the error
+  // handle the error
 }
 \end{minted}
 
@@ -196,10 +201,10 @@ void foo_bar(int& errc /*...*/){
 \begin{frame}[fragile]{Propagation}
 \begin{minted}[highlightlines={2,4}]{c++}
 void foo_bar(int& errc /*...*/){
-errc = foo();
-// ...
-errc = bar();		
-// ...
+  errc = foo();
+  // ...
+  errc = bar();		
+  // ...
 }
 \end{minted}
 
@@ -244,10 +249,9 @@ void foo_bar(foo_bar_errc errc&){
 		\item std::error\_condition
 	\end{itemize}
 \end{frame}
-	
 
 \begin{frame}[fragile]{std::error\_code in action}
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines={1-2}]{c++}
 std::error_code errcode;
 is_regular_file("non_existent_directory", errcode);
 
@@ -265,6 +269,101 @@ std::cout << errcode.category().name() << std::endl;
 		\$ 2 \\
 		\$ No such file or directory \\
 		\$ generic}	
+	\end{block}
+	
+\end{frame}
+	
+
+\begin{frame}[fragile]{std::error\_code in action}
+	\begin{minted}[highlightlines={4}]{c++}
+std::error_code errcode;
+is_regular_file("non_existent_directory", errcode);
+
+std::cout << errcode << std::endl;
+std::cout << errcode.value() << std::endl;
+std::cout << errcode.message() << std::endl;
+std::cout << errcode.category().name() << std::endl;
+	\end{minted}
+	
+	\hrulefill
+	
+	\begin{block}{output}
+	\texttt{\\
+		\$ \alert{generic:2} \\
+		\$ 2 \\
+		\$ No such file or directory \\
+		\$ generic}	
+	\end{block}
+	
+\end{frame}
+
+\begin{frame}[fragile]{std::error\_code in action}
+	\begin{minted}[highlightlines={5}]{c++}
+std::error_code errcode;
+is_regular_file("non_existent_directory", errcode);
+
+std::cout << errcode << std::endl;
+std::cout << errcode.value() << std::endl;
+std::cout << errcode.message() << std::endl;
+std::cout << errcode.category().name() << std::endl;
+	\end{minted}
+	
+	\hrulefill
+	
+	\begin{block}{output}
+	\texttt{\\
+		\$ generic:2 \\
+		\$ \alert{2} \\
+		\$ No such file or directory \\
+		\$ generic}	
+	\end{block}
+	
+\end{frame}
+
+
+
+\begin{frame}[fragile]{std::error\_code in action}
+	\begin{minted}[highlightlines={6}]{c++}
+std::error_code errcode;
+is_regular_file("non_existent_directory", errcode);
+
+std::cout << errcode << std::endl;
+std::cout << errcode.value() << std::endl;
+std::cout << errcode.message() << std::endl;
+std::cout << errcode.category().name() << std::endl;
+	\end{minted}
+	
+	\hrulefill
+	
+	\begin{block}{output}
+	\texttt{\\
+		\$ generic:2 \\
+		\$ 2 \\
+		\$ \alert{No such file or directory} \\
+		\$ generic}	
+	\end{block}
+	
+\end{frame}
+
+\begin{frame}[fragile]{std::error\_code in action}
+	\begin{minted}[highlightlines={7}]{c++}
+std::error_code errcode;
+is_regular_file("non_existent_directory", errcode);
+
+std::cout << errcode << std::endl;
+std::cout << errcode.value() << std::endl;
+std::cout << errcode.message() << std::endl;
+std::cout << errcode.category().name() << std::endl;
+	\end{minted}
+	
+	\hrulefill
+	
+	\begin{block}{output}
+	\texttt{\\
+		\$ generic:2 \\
+		\$ 2 \\
+		\$ No such file or directory \\
+		\$ \alert{generic}}
 	\end{block}
 	
 \end{frame}
@@ -291,6 +390,7 @@ if(errcode == errc::no_such_file_or_directory){
 		\begin{itemize}
 			\item define error condition enum
 			\item inform the world about new error condition enum
+			\item create custom error category for condition enum
 			\item make conversion function from new error code to error condition
 		\end{itemize}
 		\item enjoy!
@@ -300,7 +400,7 @@ if(errcode == errc::no_such_file_or_directory){
 \section{Error codes - \\ defining custom error codes}
 
 \begin{frame}[fragile]{Step 1 - define custom enum with error codes}
-	\begin{minted}[highlightlines={1}]{c++}
+	\begin{minted}[highlightlines={2}]{c++}
 enum class open_file_error {
   SUCCESS, // zero means success
   NO_SUCH_FILE_OR_DIRECTORY,
@@ -380,20 +480,32 @@ const char* open_file_error_domain::name() const noexcept{
 \end{frame}
 
 \begin{frame}[fragile]{Step 3 - custom error category}
-	\begin{minted}[highlightlines={4,5}]{c++}
+	\begin{minted}[highlightlines={3}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
-  switch (static_cast<map_access_error>(errc)){
+  switch (static_cast<open_file_error>(errc)){
     case open_file_error::SUCCESS:
       return "Success.";
     case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
       return "File does not exist.";
-    case open_file_error::FILE_IS_DIRECTORY:
-      return "Cannot open directory.";
-    case open_file_error::LACK_OF_RESOURCES:
-      return "No available file descriptor";
-    case open_file_error::FILE_BROKEN:
-      return "File is corrupted."
+    // other cases
+    case open_file_error::NO_PERMISSIONS:
+      return "Missing permissions to open the file."
+  }
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 3 - custom error category}
+	\begin{minted}[highlightlines={4,5}]{c++}
+std::string open_file_error_domain::message(int errc) const{
+  if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
+  switch (static_cast<open_file_error>(errc)){
+    case open_file_error::SUCCESS:
+      return "Success.";
+    case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
+      return "File does not exist.";
+    // other cases
     case open_file_error::NO_PERMISSIONS:
       return "Missing permissions to open the file."
   }
@@ -405,17 +517,12 @@ std::string open_file_error_domain::message(int errc) const{
 \begin{minted}[highlightlines={6,7}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
-  switch (static_cast<map_access_error>(errc)){
+  switch (static_cast<open_file_error>(errc)){
     case open_file_error::SUCCESS:
       return "Success.";
     case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
       return "File does not exist.";
-    case open_file_error::FILE_IS_DIRECTORY:
-      return "Cannot open directory.";
-    case open_file_error::LACK_OF_RESOURCES:
-      return "No available file descriptor";
-    case open_file_error::FILE_BROKEN:
-      return "File is corrupted."
+    // other cases
     case open_file_error::NO_PERMISSIONS:
       return "Missing permissions to open the file."
   }
@@ -424,20 +531,15 @@ std::string open_file_error_domain::message(int errc) const{
 \end{frame}
 
 \begin{frame}[fragile]{Step 3 - custom error category}
-\begin{minted}[highlightlines={8-15}]{c++}
+\begin{minted}[highlightlines={8-10}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
-  switch (static_cast<map_access_error>(errc)){
+  switch (static_cast<open_file_error>(errc)){
     case open_file_error::SUCCESS:
       return "Success.";
     case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
       return "File does not exist.";
-    case open_file_error::FILE_IS_DIRECTORY:
-      return "Cannot open directory.";
-    case open_file_error::LACK_OF_RESOURCES:
-      return "No available file descriptor";
-    case open_file_error::FILE_BROKEN:
-      return "File is corrupted."
+    // other cases
     case open_file_error::NO_PERMISSIONS:
       return "Missing permissions to open the file."
   }
@@ -449,17 +551,12 @@ std::string open_file_error_domain::message(int errc) const{
 \begin{minted}[highlightlines={2}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
-  switch (static_cast<map_access_error>(errc)){
+  switch (static_cast<open_file_error>(errc)){
     case open_file_error::SUCCESS:
       return "Success.";
     case open_file_error::NO_SUCH_FILE_OR_DIRECTORY:
       return "File does not exist.";
-    case open_file_error::FILE_IS_DIRECTORY:
-      return "Cannot open directory.";
-    case open_file_error::LACK_OF_RESOURCES:
-      return "No available file descriptor";
-    case open_file_error::FILE_BROKEN:
-      return "File is corrupted."
+    // other cases
     case open_file_error::NO_PERMISSIONS:
       return "Missing permissions to open the file."
   }
@@ -469,7 +566,41 @@ std::string open_file_error_domain::message(int errc) const{
 
 \begin{frame}[fragile]{Step 4 - factory function}
 
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines={3}]{c++}
+namespace std{
+  template <typename ErrorCode>
+  error_code::error_code(typename std::enable_if<
+                                  is_error_code_enum<
+                                      ErrorCode>
+                                  ::value, ErrorCode>
+                         ::type errcode) noexcept 
+             : error_code(make_error_code(errcode))
+  {}
+}
+	\end{minted}
+	
+\end{frame}
+
+\begin{frame}[fragile]{Step 4 - factory function}
+
+	\begin{minted}[highlightlines={4-7}]{c++}
+namespace std{
+  template <typename ErrorCode>
+  error_code::error_code(typename std::enable_if<
+                                  is_error_code_enum<
+                                      ErrorCode>
+                                  ::value, ErrorCode>
+                         ::type errcode) noexcept 
+             : error_code(make_error_code(errcode))
+  {}
+}
+	\end{minted}
+	
+\end{frame}
+
+\begin{frame}[fragile]{Step 4 - factory function}
+
+	\begin{minted}[highlightlines={8}]{c++}
 namespace std{
   template <typename ErrorCode>
   error_code::error_code(typename std::enable_if<
@@ -494,7 +625,7 @@ std::error_code make_error_code(open_file_error errc){
 
 \begin{frame}[fragile]{Step 5 - custom error condition}
 	\begin{minted}{c++}
-enum class library_error_condition : int {
+enum class library_error_condition{
   SUCCESS,
   WRONG_ARGUMENT,
   OS_ERROR,
@@ -526,20 +657,65 @@ struct library_error_domain : std::error_category{
 \end{frame}
 
 \begin{frame}[fragile]{Step 5 - custom error condition}
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines={4}]{c++}
 bool library_error_domain::equivalent(
           const std::error_code &errc, int condition) 
-                                      const noexcept{
-                                      
-  switch (static_cast<library_error>(condition)){
+                                      const noexcept{                     
+  switch (static_cast<library_error_condition>(condition)){
     case library_error::SUCCESS:
       if(errc.value() == 0)
         return true;
     case library_error::WRONG_ARGUMENT:
-      if(errc.category().name() == map_access_domain().name())
+      if(errc.value() == 
+           open_file_error::NO_SUCH_FILE_OR_DIRECTORY or
+         errc.value() == 
+           open_file_error::FILE_IS_DIRECTORY)
         return true;
-        
-    // other cases
+    //other cases    
+  }
+  return false;
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}[highlightlines={5-7}]{c++}
+bool library_error_domain::equivalent(
+          const std::error_code &errc, int condition) 
+                                      const noexcept{                     
+  switch (static_cast<library_error_condition>(condition)){
+    case library_error::SUCCESS:
+      if(errc.value() == 0)
+        return true;
+    case library_error::WRONG_ARGUMENT:
+      if(errc.value() == 
+           open_file_error::NO_SUCH_FILE_OR_DIRECTORY or
+         errc.value() == 
+           open_file_error::FILE_IS_DIRECTORY)
+        return true;
+    //other cases    
+  }
+  return false;
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{minted}[highlightlines={8-13}]{c++}
+bool library_error_domain::equivalent(
+          const std::error_code &errc, int condition) 
+                                      const noexcept{                     
+  switch (static_cast<library_error_condition>(condition)){
+    case library_error::SUCCESS:
+      if(errc.value() == 0)
+        return true;
+    case library_error::WRONG_ARGUMENT:
+      if(errc.value() == 
+           open_file_error::NO_SUCH_FILE_OR_DIRECTORY or
+         errc.value() == 
+           open_file_error::FILE_IS_DIRECTORY)
+        return true;
+    //other cases    
   }
   return false;
 }
@@ -547,43 +723,141 @@ bool library_error_domain::equivalent(
 \end{frame}
 
 \begin{frame}[fragile]{Step 6 - Enjoy - real life example}
-	\begin{minted}{c++}
-
+	\begin{minted}[highlightlines={1-2}]{c++}
 std::error_code errcode;
-auto route = calculate_route({}, {}, {}, errcode);
+auto settings = read_user_settings("settings.txt", errcode);
 
 if(!errcode)
-  return route;
+  return settings;
 
 std::cout << errcode.category().name() << " : " <<
              errcode.message() << std::endl;
 
-if(errcode == calculate_route_error::MAP_ERROR)
-  reinstall_map();
-else if (errcode == calculate_route_error::COULD_NOT_FIND_PATH)
-  inform_user_no_path_found();
-else if (errcode == calculate_route_error::WRONG_ARGUMENTS)
+if(errcode == library_error_condition::PERMISSIONS_ERROR)
+  ask_for_permissions();
+else if (errcode == library_error_condition::OS_ERROR)
+  std::terminate();
+else if (errcode == library_error_condition::WRONG_ARGUMENTS)
   std::terminate();
 	\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]{Step 6 - Enjoy - real life example}
-	\begin{minted}{c++}
-route calculate_route(point a, point b, route_options options,
-                      std::error_code& errc){
-  auto map_database = database(errc);
+	\begin{minted}[highlightlines={4-5}]{c++}
+std::error_code errcode;
+auto settings = read_user_settings("settings.txt", errcode);
+
+if(!errcode)
+  return settings;
+
+std::cout << errcode.category().name() << " : " <<
+             errcode.message() << std::endl;
+
+if(errcode == library_error_condition::PERMISSIONS_ERROR)
+  ask_for_permissions();
+else if (errcode == library_error_condition::OS_ERROR)
+  std::terminate();
+else if (errcode == library_error_condition::WRONG_ARGUMENTS)
+  std::terminate();
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}[highlightlines={10-11}]{c++}
+std::error_code errcode;
+auto settings = read_user_settings("settings.txt", errcode);
+
+if(!errcode)
+  return settings;
+
+std::cout << errcode.category().name() << " : " <<
+             errcode.message() << std::endl;
+
+if(errcode == library_error_condition::PERMISSIONS_ERROR)
+  ask_for_permissions();
+else if (errcode == library_error_condition::OS_ERROR)
+  std::terminate();
+else if (errcode == library_error_condition::WRONG_ARGUMENTS)
+  std::terminate();
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}[highlightlines={12-15}]{c++}
+std::error_code errcode;
+auto settings = read_user_settings("settings.txt", errcode);
+
+if(!errcode)
+  return settings;
+
+std::cout << errcode.category().name() << " : " <<
+             errcode.message() << std::endl;
+
+if(errcode == library_error_condition::PERMISSIONS_ERROR)
+  ask_for_permissions();
+else if (errcode == library_error_condition::OS_ERROR)
+  std::terminate();
+else if (errcode == library_error_condition::WRONG_ARGUMENTS)
+  std::terminate();
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}[highlightlines={1-2}]{c++}
+settings read_user_settings(std::string_view filename,
+	                             error_code& errc){
+  auto file_handle = open(filename, errc);
   if (errc) return {};
 
-  auto a_handle = map_database.find(a, errc);
-  if(errc) return {};
-  auto b_handle = map_database.find(b, errc);
+  ensure_file_correct(file_handle, errc);
   if(errc) return {};
 
-  route result_route = find_path(a_handle, b_handle,
-                                 options, errc);
+  return read_settings(file_handle);
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}[highlightlines={3-4}]{c++}
+settings read_user_settings(std::string_view filename,
+	                             error_code& errc){
+  auto file_handle = open(filename, errc);
+  if (errc) return {};
+
+  ensure_file_correct(file_handle, errc);
   if(errc) return {};
 
-  return result_route;
+  return read_settings(file_handle);
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}[highlightlines={6-7}]{c++}
+settings read_user_settings(std::string_view filename,
+	                             error_code& errc){
+  auto file_handle = open(filename, errc);
+  if (errc) return {};
+
+  ensure_file_correct(file_handle, errc);
+  if(errc) return {};
+
+  return read_settings(file_handle);
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{minted}[highlightlines={9}]{c++}
+settings read_user_settings(std::string_view filename,
+	                             error_code& errc){
+  auto file_handle = open(filename, errc);
+  if (errc) return {};
+
+  ensure_file_correct(file_handle, errc);
+  if(errc) return {};
+
+  return read_settings(file_handle);
 }
 	\end{minted}
 \end{frame}
@@ -598,19 +872,19 @@ route calculate_route(point a, point b, route_options options,
 			\vfill
 			\begin{itemize}
 				\item Performance
-				\begin{itemize}
+				\begin{itemize}[<+- | alert@+>]
 					\item speed
 					\item small (occupied memory)
 					\item speed predictability
 					\item memory occupation predictability
 					\item C compatibility
-				\end{itemize}
+				\end{itemize} \pause
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\linewidth}
 			Cons
 			\vfill
-			\begin{itemize}
+			\begin{itemize}[<+- | alert@+>]
 				\item business logic cluttering
 				\item massive amount of boilerplate code
 				\item template magic in case of std::error\_code
@@ -625,30 +899,24 @@ route calculate_route(point a, point b, route_options options,
 \begin{frame}[fragile]{Brief look at the example}
 	\begin{minted}{c++}
 try{
-  auto route = calculate_route(/*arguments*/);
-} catch(map_error& err){
+  auto settings = read_user_settings("settings.txt");
+} catch(permissions_error& err){
   // logic
-} catch(path_not_found& err){
+} /* catch(path_not_found& err){
   // logic
-} /* catch(std::invalid_argument){
-
+}  catch(std::invalid_argument){
+  // logic
 } */
 	\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]{Brief look at the example}
 	\begin{minted}{c++}
-route calculate_route(point a, point b,
-                      route_options options){
-                      
-  auto map_database = database();
+route read_user_settings(std::string_view filename){
+  auto file_handle = open(filename);
+  ensure_file_correct(file_handle);
 
-  auto a_handle = map_database.find(a);
-  auto b_handle = map_database.find(b);
-
-  route result_route = find_path(a_handle, b_handle, options);
-
-  return result_route;
+  return read_settings(file_handle);
 }
 	\end{minted}
 \end{frame}
@@ -705,7 +973,11 @@ class map_error : public std::runtime_error{};
 	\vskip 1em
 
 	\centering
-	No matter the strategy binaries with exceptions enabled result in a big binary.
+	\pause
+	\begin{alertblock}{Binary size}
+		No matter what's the strategy for exception handling. The binary will grow even if you do not use exceptions.
+	\end{alertblock}
+	
 \end{frame}
 
 
@@ -713,17 +985,17 @@ class map_error : public std::runtime_error{};
 	\begin{columns}[T]
 		\begin{column}{0.48\linewidth}
 			Pros
-			\begin{itemize}
+			\begin{itemize}[<+- | alert@+>]
 				\item differentiated error and success paths
 				\item automagical error propagation
 				\item little/no boilerplate code
-			\end{itemize}
+			\end{itemize} \pause
 		\end{column}
 	\begin{column}{0.48\linewidth}
 			Cons
 			\begin{itemize}
 				\item Performance
-				\begin{itemize}
+				\begin{itemize}[<+- | alert@+>]
 					\item slow
 					\item not deterministic speed
 					\item not deterministic storage occupation
@@ -764,14 +1036,6 @@ class map_error : public std::runtime_error{};
 	Let's call those \emph{\color{amethyst}static exceptions}
 \end{frame}
 	
-\begin{frame}{What is std::error}
-	\begin{itemize}
-		\item size of error\_code is explicitly defined
-		\item has same properties as std::error\_code
-		\item implements trivially relocatable semantics
-	\end{itemize}
-\end{frame}
-	
 \begin{frame}[fragile]{How to use return channel for std::error}
 	\begin{columns}[T]
 		\begin{column}{0.48\linewidth}
@@ -793,7 +1057,70 @@ T foo() throws;
 
 \begin{frame}[fragile]{Static exceptions example}
 	
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines={10-11}]{c++}
+string f() throws {
+  if (flip_a_coin()) throw arithmetic_error::something;
+  return "xyzzy"s + "plover"; 
+}
+
+string g() throws { return f() + "plugh"; } 
+
+int main() {
+  try {
+    auto result = g();
+    cout << "success, result is: " << result;
+  } catch(error err) {
+    cout << "failed, error is: " << err.error();
+  }
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Static exceptions example}
+	
+	\begin{minted}[highlightlines={6}]{c++}
+string f() throws {
+  if (flip_a_coin()) throw arithmetic_error::something;
+  return "xyzzy"s + "plover"; 
+}
+
+string g() throws { return f() + "plugh"; } 
+
+int main() {
+  try {
+    auto result = g();
+    cout << "success, result is: " << result;
+  } catch(error err) {
+    cout << "failed, error is: " << err.error();
+  }
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Static exceptions example}
+	
+	\begin{minted}[highlightlines={0-4}]{c++}
+string f() throws {
+  if (flip_a_coin()) throw arithmetic_error::something;
+  return "xyzzy"s + "plover"; 
+}
+
+string g() throws { return f() + "plugh"; } 
+
+int main() {
+  try {
+    auto result = g();
+    cout << "success, result is: " << result;
+  } catch(error err) {
+    cout << "failed, error is: " << err.error();
+  }
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Static exceptions example}
+	
+	\begin{minted}[highlightlines={12}]{c++}
 string f() throws {
   if (flip_a_coin()) throw arithmetic_error::something;
   return "xyzzy"s + "plover"; 
@@ -813,7 +1140,46 @@ int main() {
 \end{frame}
 
 \begin{frame}[fragile]{Compiler's support in handling errors}
-	\begin{minted}{c++}
+	\begin{minted}[highlightlines={1-2}]{c++}
+int f1() throws;	
+int f2() throws;
+
+int main(){
+// return f1() + f2(); // error
+try return f1() + f2();// ok, covers both 
+return try f1()+ f2();
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{minted}[highlightlines={5}]{c++}
+int f1() throws;	
+int f2() throws;
+
+int main(){
+// return f1() + f2(); // error
+try return f1() + f2();// ok, covers both 
+return try f1()+ f2();
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{minted}[highlightlines={6}]{c++}
+int f1() throws;	
+int f2() throws;
+
+int main(){
+// return f1() + f2(); // error
+try return f1() + f2();// ok, covers both 
+return try f1()+ f2();
+}
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{minted}[highlightlines={7}]{c++}
 int f1() throws;	
 int f2() throws;
 
@@ -826,7 +1192,10 @@ return try f1()+ f2();
 \end{frame}
 
 \begin{frame}{Cool! But what about C compatibility}
-	It is possible, that C will be ABI compatible with static exceptions!
+	\begin{alertblock}{C compatibility}
+ 		It is possible, that C will be compatible with static exceptions!
+	\end{alertblock}
+
 	
 	This implies:
 	
@@ -839,7 +1208,7 @@ return try f1()+ f2();
 
 \begin{frame}[fragile]{Short story about C language}
 	\begin{minted}{c++}
-_Either(int, std_error) somefunc(int a){ fixme
+_Either(int, std_error) somefunc(int a){
   return a > 5 ? _Expected(a) : _Unexpected(a);
 }
 
@@ -879,8 +1248,6 @@ else
 	\end{itemize}
 
 	\vfill
-
-	\texttt{std::error} type can be treated as a next-gen \texttt{std::error\_code} type.
 \end{frame}
 
 \begin{frame}{Bibliography}
@@ -894,17 +1261,21 @@ else
 \end{frame}
 
 \begin{frame}{Thank you}
-	\centering
-	Thank you for your attention!
-	\vfill
-	Questions?
-\end{frame}
-
-
-
-\begin{frame}{The END}
-\centering
-	Thanks for attention!
-\end{frame}
+	\begin{center}
+		Thank you for your attention!
+		\vskip 1em
+		Questions?
+	\end{center}
 	
+	\hrule
+	\vfill
+	
+	blog: \href{https://blog.panicsoftware.com}{\alert{blog.panicsoftware.com}} \\
+	presentation: \href{https://github.com/dawidpilarski/error_handling_presentation}{\alert{github.com/dawidpilarski/error\_handling\_presentation}}
+	
+	
+	
+	
+\end{frame}
+
 \end{document}
