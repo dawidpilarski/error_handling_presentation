@@ -32,6 +32,7 @@
 %\setbeamercolor{progress bar in head/foot}{ ... }
 %\setbeamercolor{progress bar in section page}{ ... }
 
+
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 
@@ -39,6 +40,7 @@
 \usepackage[scale=2]{ccicons}
 
 \usepackage{minted}
+\setminted[c++]{linenos = true}
 
 \usepackage{pgfplots}
 
@@ -115,12 +117,13 @@
 \end{frame}
 
 \begin{frame}[fragile]{Error code example}
+	\begin{onlyenv}<1->
 	\begin{minted}{c++}
 int sqlite3_open( const char *filename, sqlite3 **ppDb );
 	\end{minted}
+	\end{onlyenv}
 	
-	\pause
-	
+	\begin{onlyenv}<2>
 	\hrulefill
 	
 	\begin{minted}[highlightlines={2,4}]{c++}
@@ -131,17 +134,23 @@ if(open_status == SQLITE_OK){
   // handle the error
 }
 	\end{minted}
+	\end{onlyenv}
 	
-\end{frame}
+	\begin{onlyenv}<3>
 
-\begin{frame}[fragile]{Error code example}
-\begin{minted}{c++}
-int sqlite3_open( const char *filename, sqlite3 **ppDb );
-\end{minted}
+	\hrulefill
+	\begin{minted}[highlightlines={3}]{c++}
+int open_status = sqlite3_open(/* ... */ );
+if(open_status == SQLITE_OK){
+  // make use of opened database
+} else if( open_status == SQLITE_CANTOPEN_ISDIR ) {
+  // handle the error
+}
+	\end{minted}
 
-\hrulefill
-
-\begin{minted}[highlightlines={3}]{c++}
+	\end{onlyenv}
+	\begin{onlyenv}<4>
+	\begin{minted}[highlightlines={5}]{c++}
 int open_status = sqlite3_open(/* ... */ );
 if(open_status == SQLITE_OK){
   // make use of opened database
@@ -149,27 +158,9 @@ if(open_status == SQLITE_OK){
   // handle the error
 }
 \end{minted}
+	\end{onlyenv}
 
 \end{frame}
-
-\begin{frame}[fragile]{Error code example}
-\begin{minted}{c++}
-int sqlite3_open( const char *filename, sqlite3 **ppDb );
-\end{minted}
-
-\hrulefill
-
-\begin{minted}[highlightlines={5}]{c++}
-int open_status = sqlite3_open(/* ... */ );
-if(open_status == SQLITE_OK){
-  // make use of opened database
-} else if( open_status == SQLITE_CANTOPEN_ISDIR ) {
-  // handle the error
-}
-\end{minted}
-
-\end{frame}
-
 
 \begin{frame}{Handle the error}
 	How to handle the error correctly?
@@ -187,7 +178,9 @@ if(open_status == SQLITE_OK){
 \section{Error codes - propagation}
 
 \begin{frame}[fragile]{Propagation}
-	\begin{minted}[highlightlines=1]{c++}
+
+\begin{onlyenv}<1>
+\begin{minted}[highlightlines=1]{c++}
 void foo_bar(int& errc /*...*/){
   errc = foo();
   // ...
@@ -195,10 +188,9 @@ void foo_bar(int& errc /*...*/){
   // ...
 }
 	\end{minted}
-	
-\end{frame}
+\end{onlyenv}
 
-\begin{frame}[fragile]{Propagation}
+\begin{onlyenv}<2>
 \begin{minted}[highlightlines={2,4}]{c++}
 void foo_bar(int& errc /*...*/){
   errc = foo();
@@ -207,11 +199,10 @@ void foo_bar(int& errc /*...*/){
   // ...
 }
 \end{minted}
+\end{onlyenv}
 
-\end{frame}
-
-\begin{frame}[fragile]{Error translation}
-	\begin{minted}[highlightlines={3,6}]{c++}
+\begin{onlyenv}<3>
+\begin{minted}[highlightlines={3,6}]{c++}
 void foo_bar(foo_bar_errc errc&){
   foo_errc ferrc = foo();
   errc = translate_foo(ferrc);
@@ -220,7 +211,9 @@ void foo_bar(foo_bar_errc errc&){
   errc = translate_foo(berrc);
 }
 	\end{minted}
+\end{onlyenv}
 \end{frame}
+
 
 \begin{frame}{C-style error codes summary}
 	So we can see {\color{red}serious disadvantages} (except for {\color{blue}obvious advantages}):
@@ -251,6 +244,7 @@ void foo_bar(foo_bar_errc errc&){
 \end{frame}
 
 \begin{frame}[fragile]{std::error\_code in action}
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={1-2}]{c++}
 std::error_code errcode;
 is_regular_file("non_existent_directory", errcode);
@@ -260,21 +254,9 @@ std::cout << errcode.value() << std::endl;
 std::cout << errcode.message() << std::endl;
 std::cout << errcode.category().name() << std::endl;
 	\end{minted}
-	
-	\hrulefill
-	
-	\begin{block}{output}
-	\texttt{\\
-		\$ generic:2 \\
-		\$ 2 \\
-		\$ No such file or directory \\
-		\$ generic}	
-	\end{block}
-	
-\end{frame}
-	
+	\end{onlyenv}
 
-\begin{frame}[fragile]{std::error\_code in action}
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={4}]{c++}
 std::error_code errcode;
 is_regular_file("non_existent_directory", errcode);
@@ -284,20 +266,9 @@ std::cout << errcode.value() << std::endl;
 std::cout << errcode.message() << std::endl;
 std::cout << errcode.category().name() << std::endl;
 	\end{minted}
-	
-	\hrulefill
-	
-	\begin{block}{output}
-	\texttt{\\
-		\$ \alert{generic:2} \\
-		\$ 2 \\
-		\$ No such file or directory \\
-		\$ generic}	
-	\end{block}
-	
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{std::error\_code in action}
+	\begin{onlyenv}<3>
 	\begin{minted}[highlightlines={5}]{c++}
 std::error_code errcode;
 is_regular_file("non_existent_directory", errcode);
@@ -307,22 +278,9 @@ std::cout << errcode.value() << std::endl;
 std::cout << errcode.message() << std::endl;
 std::cout << errcode.category().name() << std::endl;
 	\end{minted}
-	
-	\hrulefill
-	
-	\begin{block}{output}
-	\texttt{\\
-		\$ generic:2 \\
-		\$ \alert{2} \\
-		\$ No such file or directory \\
-		\$ generic}	
-	\end{block}
-	
-\end{frame}
+	\end{onlyenv}
 
-
-
-\begin{frame}[fragile]{std::error\_code in action}
+	\begin{onlyenv}<4>
 	\begin{minted}[highlightlines={6}]{c++}
 std::error_code errcode;
 is_regular_file("non_existent_directory", errcode);
@@ -332,20 +290,9 @@ std::cout << errcode.value() << std::endl;
 std::cout << errcode.message() << std::endl;
 std::cout << errcode.category().name() << std::endl;
 	\end{minted}
-	
-	\hrulefill
-	
-	\begin{block}{output}
-	\texttt{\\
-		\$ generic:2 \\
-		\$ 2 \\
-		\$ \alert{No such file or directory} \\
-		\$ generic}	
-	\end{block}
-	
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{std::error\_code in action}
+	\begin{onlyenv}<5>
 	\begin{minted}[highlightlines={7}]{c++}
 std::error_code errcode;
 is_regular_file("non_existent_directory", errcode);
@@ -355,9 +302,51 @@ std::cout << errcode.value() << std::endl;
 std::cout << errcode.message() << std::endl;
 std::cout << errcode.category().name() << std::endl;
 	\end{minted}
+	\end{onlyenv}
 	
 	\hrulefill
 	
+	\begin{onlyenv}<1>
+	\begin{block}{output}
+	\texttt{\\
+		\$ generic:2 \\
+		\$ 2 \\
+		\$ No such file or directory \\
+		\$ generic}	
+	\end{block}
+	\end{onlyenv}
+
+	\begin{onlyenv}<2>
+	\begin{block}{output}
+	\texttt{\\
+		\$ \alert{generic:2} \\
+		\$ 2 \\
+		\$ No such file or directory \\
+		\$ generic}	
+	\end{block}
+	\end{onlyenv}
+	
+	\begin{onlyenv}<3>
+	\begin{block}{output}
+	\texttt{\\
+		\$ generic:2 \\
+		\$ \alert{2} \\
+		\$ No such file or directory \\
+		\$ generic}	
+	\end{block}
+	\end{onlyenv}
+
+	\begin{onlyenv}<4>
+	\begin{block}{output}
+	\texttt{\\
+		\$ generic:2 \\
+		\$ 2 \\
+		\$ \alert{No such file or directory} \\
+		\$ generic}	
+	\end{block}
+	\end{onlyenv}
+
+	\begin{onlyenv}<5>
 	\begin{block}{output}
 	\texttt{\\
 		\$ generic:2 \\
@@ -365,11 +354,13 @@ std::cout << errcode.category().name() << std::endl;
 		\$ No such file or directory \\
 		\$ \alert{generic}}
 	\end{block}
-	
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}[fragile]{Acting upon error}
-	\begin{minted}{c++}
+	\begin{onlyenv}<1>
+	\begin{minted}[highlightlines={1-2}]{c++}
 std::error_code errcode;
 is_regular_file("non_existent_file", errcode);
   
@@ -377,6 +368,19 @@ if(errcode == errc::no_such_file_or_directory){
   // creating a file
 }
 	\end{minted}
+	\end{onlyenv}
+
+	\begin{onlyenv}<2>
+	\begin{minted}[highlightlines={4-6}]{c++}
+std::error_code errcode;
+is_regular_file("non_existent_file", errcode);
+  
+if(errcode == errc::no_such_file_or_directory){
+  // creating a file
+}
+	\end{minted}
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}{Let's define our own error code}
@@ -400,6 +404,7 @@ if(errcode == errc::no_such_file_or_directory){
 \section{Error codes - \\ defining custom error codes}
 
 \begin{frame}[fragile]{Step 1 - define custom enum with error codes}
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={2}]{c++}
 enum class open_file_error {
   SUCCESS, // zero means success
@@ -410,10 +415,10 @@ enum class open_file_error {
   NO_PERMISSIONS
 };
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
-\begin{minted}[highlightlines={3,4}]{c++}
+	\begin{onlyenv}<2>
+	\begin{minted}[highlightlines={3,4}]{c++}
 enum class open_file_error {
   SUCCESS, // zero means success
   NO_SUCH_FILE_OR_DIRECTORY,
@@ -423,10 +428,10 @@ enum class open_file_error {
   NO_PERMISSIONS
 };
 \end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
-\begin{minted}[highlightlines={5,6}]{c++}
+	\begin{onlyenv}<3>
+	\begin{minted}[highlightlines={5,6}]{c++}
 enum class open_file_error {
   SUCCESS, // zero means success
   NO_SUCH_FILE_OR_DIRECTORY,
@@ -436,10 +441,10 @@ enum class open_file_error {
   NO_PERMISSIONS
 };
 \end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 1 - define custom enum with error codes}
-\begin{minted}[highlightlines={7}]{c++}
+	\begin{onlyenv}<4>
+	\begin{minted}[highlightlines={7}]{c++}
 enum class open_file_error {
   SUCCESS, // zero means success
   NO_SUCH_FILE_OR_DIRECTORY,
@@ -449,6 +454,8 @@ enum class open_file_error {
   NO_PERMISSIONS
 };
 \end{minted}
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}[fragile]{Step 2 - inform the world about new error code type}
@@ -480,6 +487,7 @@ const char* open_file_error_domain::name() const noexcept{
 \end{frame}
 
 \begin{frame}[fragile]{Step 3 - custom error category}
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={3}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
@@ -494,9 +502,9 @@ std::string open_file_error_domain::message(int errc) const{
   }
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 3 - custom error category}
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={4,5}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
@@ -511,10 +519,10 @@ std::string open_file_error_domain::message(int errc) const{
   }
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 3 - custom error category}
-\begin{minted}[highlightlines={6,7}]{c++}
+	\begin{onlyenv}<3>
+	\begin{minted}[highlightlines={6,7}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
   switch (static_cast<open_file_error>(errc)){
@@ -528,10 +536,10 @@ std::string open_file_error_domain::message(int errc) const{
   }
 }
 \end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 3 - custom error category}
-\begin{minted}[highlightlines={8-10}]{c++}
+	\begin{onlyenv}<4>
+	\begin{minted}[highlightlines={8-10}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
   switch (static_cast<open_file_error>(errc)){
@@ -545,10 +553,10 @@ std::string open_file_error_domain::message(int errc) const{
   }
 }
 \end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 3 - custom error category}
-\begin{minted}[highlightlines={2}]{c++}
+	\begin{onlyenv}<5>
+	\begin{minted}[highlightlines={2}]{c++}
 std::string open_file_error_domain::message(int errc) const{
   if(errc < 0 or errc > 4) return "UNKNOWN ERROR";
   switch (static_cast<open_file_error>(errc)){
@@ -562,10 +570,11 @@ std::string open_file_error_domain::message(int errc) const{
   }
 }
 \end{minted}
+	\end{onlyenv}
 \end{frame}
 
 \begin{frame}[fragile]{Step 4 - factory function}
-
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={3}]{c++}
 namespace std{
   template <typename ErrorCode>
@@ -578,11 +587,9 @@ namespace std{
   {}
 }
 	\end{minted}
-	
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 4 - factory function}
-
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={4-7}]{c++}
 namespace std{
   template <typename ErrorCode>
@@ -595,11 +602,9 @@ namespace std{
   {}
 }
 	\end{minted}
+	\end{onlyenv}
 	
-\end{frame}
-
-\begin{frame}[fragile]{Step 4 - factory function}
-
+	\begin{onlyenv}<3>
 	\begin{minted}[highlightlines={8}]{c++}
 namespace std{
   template <typename ErrorCode>
@@ -612,7 +617,8 @@ namespace std{
   {}
 }
 	\end{minted}
-	
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}[fragile]{Step 4 - factory function}
@@ -632,6 +638,24 @@ enum class library_error_condition{
   PERMISSIONS_ERROR
 };
 	\end{minted}
+
+	\begin{onlyenv}<2>
+	\hrule
+	\vfill
+
+	\begin{minted}[fontsize=\footnotesize]{c++}
+enum class open_file_error {
+  SUCCESS, // zero means success
+  NO_SUCH_FILE_OR_DIRECTORY,
+  FILE_IS_DIRECTORY,
+  LACK_OF_RESOURCES,
+  FILE_BROKEN,
+  NO_PERMISSIONS
+};
+	\end{minted}
+
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}[fragile]{Step 5 - custom error condition}
@@ -657,6 +681,7 @@ struct library_error_domain : std::error_category{
 \end{frame}
 
 \begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={4}]{c++}
 bool library_error_domain::equivalent(
           const std::error_code &errc, int condition) 
@@ -676,9 +701,9 @@ bool library_error_domain::equivalent(
   return false;
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={5-7}]{c++}
 bool library_error_domain::equivalent(
           const std::error_code &errc, int condition) 
@@ -698,9 +723,9 @@ bool library_error_domain::equivalent(
   return false;
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 5 - custom error condition}
+	\begin{onlyenv}<3>
 	\begin{minted}[highlightlines={8-13}]{c++}
 bool library_error_domain::equivalent(
           const std::error_code &errc, int condition) 
@@ -720,9 +745,11 @@ bool library_error_domain::equivalent(
   return false;
 }
 	\end{minted}
+	\end{onlyenv}
 \end{frame}
 
 \begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={1-2}]{c++}
 std::error_code errcode;
 auto settings = read_user_settings("settings.txt", errcode);
@@ -740,9 +767,9 @@ else if (errcode == library_error_condition::OS_ERROR)
 else if (errcode == library_error_condition::WRONG_ARGUMENTS)
   std::terminate();
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={4-5}]{c++}
 std::error_code errcode;
 auto settings = read_user_settings("settings.txt", errcode);
@@ -760,9 +787,9 @@ else if (errcode == library_error_condition::OS_ERROR)
 else if (errcode == library_error_condition::WRONG_ARGUMENTS)
   std::terminate();
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<3>
 	\begin{minted}[highlightlines={10-11}]{c++}
 std::error_code errcode;
 auto settings = read_user_settings("settings.txt", errcode);
@@ -780,9 +807,9 @@ else if (errcode == library_error_condition::OS_ERROR)
 else if (errcode == library_error_condition::WRONG_ARGUMENTS)
   std::terminate();
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<4>
 	\begin{minted}[highlightlines={12-15}]{c++}
 std::error_code errcode;
 auto settings = read_user_settings("settings.txt", errcode);
@@ -800,9 +827,12 @@ else if (errcode == library_error_condition::OS_ERROR)
 else if (errcode == library_error_condition::WRONG_ARGUMENTS)
   std::terminate();
 	\end{minted}
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={1-2}]{c++}
 settings read_user_settings(std::string_view filename,
 	                             error_code& errc){
@@ -815,9 +845,9 @@ settings read_user_settings(std::string_view filename,
   return read_settings(file_handle);
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={3-4}]{c++}
 settings read_user_settings(std::string_view filename,
 	                             error_code& errc){
@@ -830,9 +860,9 @@ settings read_user_settings(std::string_view filename,
   return read_settings(file_handle);
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<3>
 	\begin{minted}[highlightlines={6-7}]{c++}
 settings read_user_settings(std::string_view filename,
 	                             error_code& errc){
@@ -845,9 +875,9 @@ settings read_user_settings(std::string_view filename,
   return read_settings(file_handle);
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Step 6 - Enjoy - real life example}
+	\begin{onlyenv}<4>
 	\begin{minted}[highlightlines={9}]{c++}
 settings read_user_settings(std::string_view filename,
 	                             error_code& errc){
@@ -860,8 +890,8 @@ settings read_user_settings(std::string_view filename,
   return read_settings(file_handle);
 }
 	\end{minted}
+	\end{onlyenv}
 \end{frame}
-
 	
 \section{Error codes - summary}
 
@@ -1056,7 +1086,7 @@ T foo() throws;
 \end{frame}
 
 \begin{frame}[fragile]{Static exceptions example}
-	
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={10-11}]{c++}
 string f() throws {
   if (flip_a_coin()) throw arithmetic_error::something;
@@ -1074,10 +1104,9 @@ int main() {
   }
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Static exceptions example}
-	
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={6}]{c++}
 string f() throws {
   if (flip_a_coin()) throw arithmetic_error::something;
@@ -1095,9 +1124,9 @@ int main() {
   }
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Static exceptions example}
+	\begin{onlyenv}<3>
 	
 	\begin{minted}[highlightlines={0-4}]{c++}
 string f() throws {
@@ -1116,10 +1145,9 @@ int main() {
   }
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Static exceptions example}
-	
+	\begin{onlyenv}<4>
 	\begin{minted}[highlightlines={12}]{c++}
 string f() throws {
   if (flip_a_coin()) throw arithmetic_error::something;
@@ -1137,9 +1165,13 @@ int main() {
   }
 }
 	\end{minted}
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}[fragile]{Compiler's support in handling errors}
+
+	\begin{onlyenv}<1>
 	\begin{minted}[highlightlines={1-2}]{c++}
 int f1() throws;	
 int f2() throws;
@@ -1150,9 +1182,9 @@ try return f1() + f2();// ok, covers both
 return try f1()+ f2();
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{onlyenv}<2>
 	\begin{minted}[highlightlines={5}]{c++}
 int f1() throws;	
 int f2() throws;
@@ -1163,9 +1195,9 @@ try return f1() + f2();// ok, covers both
 return try f1()+ f2();
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{onlyenv}<3>
 	\begin{minted}[highlightlines={6}]{c++}
 int f1() throws;	
 int f2() throws;
@@ -1176,9 +1208,9 @@ try return f1() + f2();// ok, covers both
 return try f1()+ f2();
 }
 	\end{minted}
-\end{frame}
+	\end{onlyenv}
 
-\begin{frame}[fragile]{Compiler's support in handling errors}
+	\begin{onlyenv}<4>
 	\begin{minted}[highlightlines={7}]{c++}
 int f1() throws;	
 int f2() throws;
@@ -1189,6 +1221,8 @@ try return f1() + f2();// ok, covers both
 return try f1()+ f2();
 }
 	\end{minted}
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}{Cool! But what about C compatibility}
