@@ -7,6 +7,7 @@
 \usepackage{multirow}
 \usepackage{pgfpages}
 \usepackage{pifont}
+\usepackage{textpos}
 \newcommand{\cmark}{\ding{51}}
 \newcommand{\xmark}{\ding{55}}
 \setbeamertemplate{note page}{\insertnote}
@@ -31,6 +32,11 @@
 %\setbeamercolor{title separator}{ ... }
 %\setbeamercolor{progress bar in head/foot}{ ... }
 %\setbeamercolor{progress bar in section page}{ ... }
+
+\addtobeamertemplate{frametitle}{}{%
+\begin{textblock*}{100mm}(1\textwidth, -1cm)
+\includegraphics[height=0.97cm]{TT_Logo_bckg.png}
+\end{textblock*}}
 
 
 \usepackage[utf8]{inputenc}
@@ -73,8 +79,8 @@
 	
 	There exist two common strategies for error handling:
 	\begin{itemize}
-		\item error codes?
-		\item exceptions?
+		\item error codes
+		\item exceptions
 	\end{itemize}
 \end{frame}
 
@@ -137,8 +143,8 @@ if(open_status == SQLITE_OK){
 	\end{onlyenv}
 	
 	\begin{onlyenv}<3>
-
 	\hrulefill
+
 	\begin{minted}[highlightlines={3}]{c++}
 int open_status = sqlite3_open(/* ... */ );
 if(open_status == SQLITE_OK){
@@ -150,6 +156,8 @@ if(open_status == SQLITE_OK){
 
 	\end{onlyenv}
 	\begin{onlyenv}<4>
+	\hrulefill
+
 	\begin{minted}[highlightlines={5}]{c++}
 int open_status = sqlite3_open(/* ... */ );
 if(open_status == SQLITE_OK){
@@ -212,16 +220,28 @@ void foo_bar(foo_bar_errc errc&){
 }
 	\end{minted}
 \end{onlyenv}
-\end{frame}
 
+\begin{onlyenv}<4>
+\begin{minted}[highlightlines={4-6}]{c++}
+void foo_bar(foo_bar_errc errc&){
+  foo_errc ferrc = foo();
+  errc = translate_foo(ferrc);
+  if(errc != foo_errc::SUCCESS){
+  	return;
+  }
+  // ...
+}
+	\end{minted}
+\end{onlyenv}
+\end{frame}
 
 \begin{frame}{C-style error codes summary}
 	So we can see {\color{red}serious disadvantages} (except for {\color{blue}obvious advantages}):
 	
 	\begin{itemize}[<+- | alert@+>]
 		\item success path same as error path
-		\item boiler plate code
 		\item cluttering code with translations
+		\item boring manual error propagation
 	\end{itemize}
 \end{frame}
 	
@@ -381,6 +401,35 @@ if(errcode == errc::no_such_file_or_directory){
 	\end{minted}
 	\end{onlyenv}
 
+	\begin{onlyenv}<3>
+	\centerline{With enum error codes.}
+	\vfill
+	\begin{minted}[highlightlines={3}]{c++}
+void foo_bar(foo_bar_errc errc&){
+  foo_errc ferrc = foo();
+  errc = translate_foo(ferrc);
+  if(errc != foo_errc::SUCCESS){
+    return;
+  }
+  // ...
+}
+	\end{minted}
+	\end{onlyenv}
+
+	\begin{onlyenv}<4>
+	\centerline{With std::error\_code.}
+	\vfill
+	\begin{minted}[highlightlines={3}]{c++}
+void foo_bar(std::error_code errc&){
+  errc = foo();
+  if(errc){
+    return;
+  }
+  // ...
+}
+	\end{minted}
+	\end{onlyenv}
+
 \end{frame}
 
 \begin{frame}{Let's define our own error code}
@@ -388,14 +437,14 @@ if(errcode == errc::no_such_file_or_directory){
 	\begin{itemize}[<+- | alert@+>]
 		\item define custom enum with error codes
 		\item inform, that the enum is an error code
-		\item create custom error category (or use existing one)
+		\item create custom error category
 		\item create enum to error code factory function
 		\item define custom error condition
 		\begin{itemize}
 			\item define error condition enum
 			\item inform the world about new error condition enum
 			\item create custom error category for condition enum
-			\item make conversion function from new error code to error condition
+			\item make conversion function from new error condition enum to error condition
 		\end{itemize}
 		\item enjoy!
 	\end{itemize}
@@ -688,12 +737,12 @@ bool library_error_domain::equivalent(
                                       const noexcept{                     
   switch (static_cast<library_error_condition>(condition)){
     case library_error::SUCCESS:
-      if(errc.value() == 0)
+      if(errc == open_file_error::SUCCESS)
         return true;
     case library_error::WRONG_ARGUMENT:
-      if(errc.value() == 
+      if(errc == 
            open_file_error::NO_SUCH_FILE_OR_DIRECTORY or
-         errc.value() == 
+         errc == 
            open_file_error::FILE_IS_DIRECTORY)
         return true;
     //other cases    
@@ -710,12 +759,12 @@ bool library_error_domain::equivalent(
                                       const noexcept{                     
   switch (static_cast<library_error_condition>(condition)){
     case library_error::SUCCESS:
-      if(errc.value() == 0)
+      if(errc == open_file_error::SUCCESS)
         return true;
     case library_error::WRONG_ARGUMENT:
-      if(errc.value() == 
+      if(errc == 
            open_file_error::NO_SUCH_FILE_OR_DIRECTORY or
-         errc.value() == 
+         errc == 
            open_file_error::FILE_IS_DIRECTORY)
         return true;
     //other cases    
@@ -732,12 +781,12 @@ bool library_error_domain::equivalent(
                                       const noexcept{                     
   switch (static_cast<library_error_condition>(condition)){
     case library_error::SUCCESS:
-      if(errc.value() == 0)
+      if(errc == open_file_error::SUCCESS)
         return true;
     case library_error::WRONG_ARGUMENT:
-      if(errc.value() == 
+      if(errc == 
            open_file_error::NO_SUCH_FILE_OR_DIRECTORY or
-         errc.value() == 
+         errc == 
            open_file_error::FILE_IS_DIRECTORY)
         return true;
     //other cases    
@@ -934,7 +983,7 @@ try{
   // logic
 } /* catch(path_not_found& err){
   // logic
-}  catch(std::invalid_argument){
+}  catch(std::invalid_argument& ){
   // logic
 } */
 	\end{minted}
@@ -942,7 +991,7 @@ try{
 
 \begin{frame}[fragile]{Brief look at the example}
 	\begin{minted}{c++}
-route read_user_settings(std::string_view filename){
+settings read_user_settings(std::string_view filename){
   auto file_handle = open(filename);
   ensure_file_correct(file_handle);
 
@@ -953,15 +1002,21 @@ route read_user_settings(std::string_view filename){
 
 \begin{frame}[fragile]{Defining custom exception}
 	\begin{minted}{c++}
-class map_error : public std::runtime_error{};
+class open_file_error : public std::runtime_error{};
 	\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]{Dark side of the exceptions}
 	\begin{itemize}[<+- | alert@+>]
 		\item Still translation of exceptions is needed
-		\item For performance related reasons about 50\% of projects have disabled exceptions
+		\item For performance related reasons about 50\% of projects have disabled exceptions \tiny{CppDevSurvey 2018}\\
 	\end{itemize}
+	\begin{uncoverenv}<3>
+	\begin{center}
+		\centering \includegraphics[width=.45\linewidth]{survey_results.png}
+	\end{center}
+	\end{uncoverenv}
+	
 \end{frame}
 
 \section{C++ - zero overhead rule}
